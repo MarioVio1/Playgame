@@ -245,6 +245,11 @@ export default function Home() {
     setView('home');
   }, []);
 
+  const showNotification = useCallback((message: string, type: 'info' | 'success' | 'error' = 'info') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  }, []);
+
   const startOcaGame = useCallback((playerName: string, vsCpu: boolean, numBots: number) => {
     const colors = ['Rosso', 'Blu', 'Verde', 'Giallo', 'Viola', 'Rosa'];
     const newPlayers = [{
@@ -282,11 +287,6 @@ export default function Home() {
   const exitOcaGame = useCallback(() => {
     setView('home');
     setOcaPlayers([]);
-  }, []);
-
-  const showNotification = useCallback((message: string, type: 'info' | 'success' | 'error' = 'info') => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 3000);
   }, []);
 
   // Polling for game state updates with error handling

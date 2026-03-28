@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GiocoOca } from '@/components/gioco-oca';
 import { TVMode } from '@/components/tv-mode';
 import { PhoneController } from '@/components/phone-controller';
+import { UNOCard, UNODeck, DiscardPile } from '@/components/uno-card';
+import { IndovinaChi } from '@/components/indovina-chi';
 
 // ============================================
 // TYPES
@@ -1187,69 +1189,116 @@ export default function Home() {
           ) : (
             <>
               {isMyTurn && (
-                <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-3 rounded-full text-white font-bold mb-4">
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-3 rounded-full text-white font-bold mb-6 text-lg shadow-lg shadow-green-500/30"
+                >
                   🎯 È il tuo turno!
-                </div>
+                </motion.div>
               )}
               
-              {/* Center area */}
-              <div className="flex gap-8 mb-6">
+              {/* Center area with premium cards */}
+              <div className="flex gap-12 items-center mb-8">
                 {/* Draw pile */}
-                <button
-                  onClick={() => isMyTurn && drawCard()}
+                <UNODeck
+                  remaining={gameState.deck?.length || 0}
+                  onDraw={() => isMyTurn && drawCard()}
                   disabled={!isMyTurn}
-                  className={`w-20 h-28 bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl border-2 border-gray-600 flex items-center justify-center transition-all ${isMyTurn ? 'hover:scale-105 cursor-pointer' : 'opacity-50 cursor-default'}`}
-                >
-                  <span className="text-3xl">🎴</span>
-                </button>
+                />
                 
                 {/* Discard pile */}
-                <div
-                  className="w-24 h-32 rounded-xl flex items-center justify-center shadow-2xl"
-                  style={{ background: UNO_COLORS[topCard?.color || currentColor]?.bg }}
-                >
-                  <span className="text-4xl text-white font-bold">{topCard?.value || '?'}</span>
+                <div className="flex flex-col items-center gap-2">
+                  <DiscardPile
+                    topCard={topCard}
+                    currentColor={currentColor}
+                  />
                 </div>
               </div>
               
-              {/* Current color */}
-              <div
-                className="px-4 py-2 rounded-xl text-white font-bold mb-4"
-                style={{ background: UNO_COLORS[currentColor]?.bg }}
+              {/* Current color indicator */}
+              <motion.div
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+                className="px-6 py-3 rounded-2xl text-white font-bold mb-6 text-lg shadow-lg"
+                style={{
+                  background: UNO_COLORS[currentColor]?.bg
+                }}
               >
-                Colore: {currentColor?.toUpperCase()}
-              </div>
+                Colore Attuale: {currentColor?.toUpperCase()}
+              </motion.div>
               
-              {/* My cards */}
-              <div className="bg-black/30 rounded-2xl p-4 max-w-md">
-                <p className="text-gray-400 text-sm text-center mb-3">Le tue carte ({myCards.length})</p>
-                <div className="flex gap-2 justify-center flex-wrap">
+              {/* My cards with premium design */}
+              <div className="bg-black/40 backdrop-blur-xl rounded-3xl p-6 max-w-4xl w-full border border-white/10">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-gray-300 font-semibold">Le tue carte</p>
+                  <span className="bg-purple-500/30 text-purple-300 px-3 py-1 rounded-full text-sm font-medium">
+                    {myCards.length} carte
+                  </span>
+                </div>
+                <div className="flex gap-3 justify-center flex-wrap">
                   {myCards.map((card, i) => {
                     const canPlay = canPlayCard(card);
+                    const cardType = card.value === '🚫' ? 'skip' :
+                                    card.value === '🔄' ? 'reverse' :
+                                    card.value === '+2' ? 'draw2' :
+                                    card.value === '🎨' ? 'wild' :
+                                    card.value === '+4' ? 'wild4' : 'number';
                     return (
-                      <button
+                      <motion.div
                         key={i}
-                        onClick={() => canPlay && playCard(card.id)}
-                        className={`w-14 h-20 rounded-lg flex items-center justify-center transition-all ${
-                          canPlay ? 'border-2 border-white/50 hover:-translate-y-2 cursor-pointer' : 'opacity-50 cursor-default'
-                        }`}
-                        style={{ background: UNO_COLORS[card.color || 'black']?.bg }}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.05 }}
                       >
-                        <span className="text-xl text-white font-bold">{card.value}</span>
-                      </button>
+                        <UNOCard
+                          value={card.value}
+                          color={card.color as any}
+                          type={cardType as any}
+                          onClick={() => canPlay && playCard(card.id)}
+                          disabled={!canPlay}
+                          selected={canPlay}
+                          size="lg"
+                        />
+                      </motion.div>
                     );
                   })}
                 </div>
               </div>
               
               {/* Other players */}
-              <div className="mt-4 bg-black/20 rounded-xl p-3 w-full max-w-sm">
-                {(gameState.players as any[])?.map((p: any, i: number) => (
-                  <div key={i} className={`flex justify-between items-center p-2 rounded-lg ${gameState.currentTurn === p.id ? 'bg-white/10' : ''}`}>
-                    <span className="text-white">{p.name} {p.isCpu && '🤖'}</span>
-                    <span className="text-gray-400">{p.hand?.length || 0} carte</span>
-                  </div>
-                ))}
+              <div className="mt-6 bg-black/30 backdrop-blur-xl rounded-2xl p-4 w-full max-w-md border border-white/10">
+                <h3 className="text-white font-semibold mb-3">Giocatori</h3>
+                <div className="space-y-2">
+                  {(gameState.players as any[])?.map((p: any, i: number) => (
+                    <div 
+                      key={i} 
+                      className={`flex justify-between items-center p-3 rounded-xl transition-all ${
+                        gameState.currentTurn === p.id 
+                          ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30' 
+                          : 'bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${
+                          i === 0 ? 'from-red-500 to-orange-500' :
+                          i === 1 ? 'from-blue-500 to-cyan-500' :
+                          i === 2 ? 'from-green-500 to-emerald-500' :
+                          'from-purple-500 to-pink-500'
+                        } flex items-center justify-center text-white font-bold text-sm`}>
+                          {p.name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-white">{p.name} {p.isCpu && '🤖'}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-gray-400">{p.hand?.length || 0}</span>
+                        {gameState.currentTurn === p.id && (
+                          <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </>
           )}
@@ -1261,6 +1310,54 @@ export default function Home() {
             ← Esci
           </button>
         </main>
+      );
+    }
+
+    // INDOVINA CHI GAME
+    if (gameType === 'indovinachi') {
+      const isMyTurn = gameState.currentTurn === playerId;
+      const phase = gameState.phase as string;
+      const winner = gameState.winner as string | null;
+      const myCharacterId = gameState.myCharacter as number | null;
+      const secretCharacterId = gameState.secretCharacter as number | null;
+      const eliminatedCharacters = (gameState.eliminatedCharacters as number[]) || [];
+      const currentQuestion = gameState.currentQuestion as string || '';
+      const answer = gameState.lastAnswer as boolean | null;
+      const canGuess = isMyTurn && phase === 'guessing';
+      const myCharacter = CHARACTERS.find(c => c.id === myCharacterId) || null;
+      const secretCharacter = CHARACTERS.find(c => c.id === secretCharacterId) || null;
+
+      const handleAskQuestion = async (attribute: string, value: string) => {
+        const res = await gameApi('askQuestion', { roomCode, playerId, attribute, value });
+        if (res.success) {
+          setGameState(res.gameState);
+        }
+      };
+
+      const handleGuess = async (characterId: number) => {
+        const res = await gameApi('guessCharacter', { roomCode, playerId, characterId });
+        if (res.success) {
+          setGameState(res.gameState);
+          if (res.winner) {
+            showNotification(res.winner === playerId ? '🏆 Hai indovinato!' : '😢 Non era quello giusto!', res.winner === playerId ? 'success' : 'error');
+          }
+        }
+      };
+
+      return (
+        <IndovinaChi
+          characters={CHARACTERS}
+          secretCharacter={secretCharacter}
+          eliminatedCharacters={eliminatedCharacters}
+          onAskQuestion={handleAskQuestion}
+          onGuess={handleGuess}
+          isMyTurn={isMyTurn}
+          currentQuestion={currentQuestion}
+          answer={answer}
+          canGuess={canGuess}
+          winner={winner === playerId ? 'you' : winner ? 'opponent' : null}
+          myCharacter={myCharacter}
+        />
       );
     }
 

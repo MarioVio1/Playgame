@@ -119,9 +119,8 @@ const GAMES = [
   { id: 'giocodelloca', name: 'Gioco dell\'Oca', emoji: '🪿', subtitle: 'Il classico percorso', players: '2-6', time: '20-40 min', gradient: 'from-amber-400 to-orange-500', isOca: true },
   { id: 'briscola', name: 'Briscola', emoji: '🃏', subtitle: 'Carte trevisane', players: '2-4', time: '15-25 min', gradient: 'from-amber-600 to-yellow-600' },
   { id: 'uno', name: 'UNO', emoji: '🎴', subtitle: 'Il classico colorato', players: '2-8', time: '15-30 min', gradient: 'from-red-500 to-pink-500', hot: true },
-  { id: 'scopa', name: 'Scopa', emoji: '🪙', subtitle: 'Prendi tutte le carte', players: '2-4', time: '20-30 min', gradient: 'from-blue-500 to-cyan-500' },
   { id: 'indovinachi', name: 'Indovina Chi', emoji: '🔍', subtitle: 'Indovina il personaggio', players: '2', time: '10-20 min', gradient: 'from-purple-500 to-violet-500' },
-  { id: 'nomecitta', name: 'Nome Città', emoji: '📝', subtitle: 'Cose, Animali, Città', players: '2-8', time: '10-20 min', gradient: 'from-pink-500 to-rose-500' },
+  { id: 'nomecitta', name: 'Nome Città', emoji: '📝', subtitle: 'Nome, Città, Lavoro...', players: '2-8', time: '10-20 min', gradient: 'from-pink-500 to-rose-500' },
   { id: 'dama', name: 'Dama', emoji: '♛', subtitle: 'Il classico da tavolo', players: '2', time: '15-30 min', gradient: 'from-violet-500 to-purple-500' },
   { id: 'mercanteinfiera', name: 'Mercante in Fiera', emoji: '🎪', subtitle: 'Vinci il jackpot', players: '2-6', time: '20-40 min', gradient: 'from-orange-500 to-amber-500' },
 ];
@@ -1372,7 +1371,7 @@ export default function Home() {
       const scores = gameState.scores as Record<string, number> || {};
       const hostPlayer = players.find(p => p.isHost);
       const isPlayerHost = hostPlayer?.id === playerId;
-      const categories = ['Nome', 'Città', 'Cosa', 'Animale', 'Frutto', 'Oggetto'];
+      const categories = ['Nome', 'Città', 'Animale', 'Frutto', 'Lavoro', 'Fiore'];
       
       return (
         <main className="min-h-screen bg-gradient-to-br from-gray-900 via-pink-900/20 to-gray-900 flex flex-col items-center p-4">

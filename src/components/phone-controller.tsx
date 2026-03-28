@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { DevicePhoneMobileIcon, HandRaisedIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { Smartphone, Hand, Check } from 'lucide-react';
 
 interface PhoneControllerProps {
   roomCode: string;
@@ -35,7 +35,7 @@ export function PhoneController({ roomCode, playerName, playerId, isHost, onConn
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-              <DevicePhoneMobileIcon className="w-5 h-5 text-white" />
+              <Smartphone className="w-5 h-5 text-white" />
             </div>
             <div>
               <h1 className="text-lg font-bold text-white">Controller</h1>
@@ -128,7 +128,7 @@ export function PhoneController({ roomCode, playerName, playerId, isHost, onConn
                       transition={{ duration: 1, repeat: Infinity }}
                       className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center"
                     >
-                      <HandRaisedIcon className="w-8 h-8 text-white" />
+                      <Hand className="w-8 h-8 text-white" />
                     </motion.div>
                     <h3 className="text-xl font-bold text-white mb-2">È il tuo turno!</h3>
                     <p className="text-purple-300 text-sm">Seleziona un'azione sullo schermo TV</p>
@@ -146,7 +146,7 @@ export function PhoneController({ roomCode, playerName, playerId, isHost, onConn
 
               {/* Connection Status */}
               <div className="flex items-center justify-center gap-2 text-purple-300 text-sm">
-                <CheckIcon className="w-4 h-4 text-green-400" />
+                <Check className="w-4 h-4 text-green-400" />
                 <span>Connesso alla stanza {roomCode}</span>
               </div>
             </motion.div>

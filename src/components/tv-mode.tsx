@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { QrCodeIcon, DevicePhoneMobileIcon, TvIcon, UsersIcon } from '@heroicons/react/24/outline';
+import { QrCode, Smartphone, Tv, Users } from 'lucide-react';
 
 interface TVModeProps {
   roomCode: string;
@@ -129,7 +129,7 @@ export function TVMode({ roomCode, gameType, players, gameState, onExit }: TVMod
           >
             <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 text-center">
               <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <QrCodeIcon className="w-8 h-8 text-white" />
+                <QrCode className="w-8 h-8 text-white" />
               </div>
               
               <h2 className="text-2xl font-bold text-white mb-2">Unisciti al Gioco!</h2>
@@ -159,7 +159,7 @@ export function TVMode({ roomCode, gameType, players, gameState, onExit }: TVMod
               </div>
 
               <div className="flex items-center justify-center gap-2 text-purple-300">
-                <DevicePhoneMobileIcon className="w-5 h-5" />
+                <Smartphone className="w-5 h-5" />
                 <span>Usa il tuo smartphone come controller!</span>
               </div>
             </div>
@@ -174,7 +174,7 @@ export function TVMode({ roomCode, gameType, players, gameState, onExit }: TVMod
           >
             <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 mb-6">
               <div className="flex items-center gap-3 mb-6">
-                <UsersIcon className="w-6 h-6 text-purple-400" />
+                <Users className="w-6 h-6 text-purple-400" />
                 <h2 className="text-2xl font-bold text-white">Giocatori Connessi</h2>
                 <span className="ml-auto px-3 py-1 bg-purple-500/30 text-purple-300 rounded-full text-sm font-medium">
                   {players.length} / 8
@@ -236,7 +236,7 @@ export function TVMode({ roomCode, gameType, players, gameState, onExit }: TVMod
             <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 backdrop-blur-xl rounded-3xl p-6 border border-purple-500/20">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <TvIcon className="w-6 h-6 text-purple-400" />
+                  <Tv className="w-6 h-6 text-purple-400" />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-white mb-2">Come Funziona</h3>

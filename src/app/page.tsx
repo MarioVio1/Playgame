@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GiocoOca } from '@/components/gioco-oca';
+import { TVMode } from '@/components/tv-mode';
+import { PhoneController } from '@/components/phone-controller';
 
 // ============================================
 // TYPES
@@ -163,7 +165,7 @@ async function gameApi(action: string, data: Record<string, unknown> = {}, retri
 // MAIN COMPONENT
 // ============================================
 export default function Home() {
-  const [view, setView] = useState<'home' | 'lobby' | 'game' | 'giocooca'>('home');
+  const [view, setView] = useState<'home' | 'lobby' | 'game' | 'giocooca' | 'tv' | 'phone'>('home');
   const [gameType, setGameType] = useState<string>('');
   const [roomCode, setRoomCode] = useState<string>('');
   const [playerName, setPlayerName] = useState<string>('');
@@ -208,6 +210,39 @@ export default function Home() {
 
   // Gioco dell'Oca state
   const [ocaPlayers, setOcaPlayers] = useState<{id: string; name: string; position: number; color: string; isCpu: boolean}[]>([]);
+
+  // TV Mode state
+  const [isTVMode, setIsTVMode] = useState(false);
+  const [isPhoneMode, setIsPhoneMode] = useState(false);
+
+  // Check for join parameter on load
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const joinCode = params.get('join');
+      if (joinCode) {
+        setRoomCode(joinCode);
+        setIsPhoneMode(true);
+      }
+      
+      // Check if device is likely a TV/big screen
+      const isLargeScreen = window.innerWidth > 1024;
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isLargeScreen && !isMobile) {
+        // Could auto-enable TV mode here if desired
+      }
+    }
+  }, []);
+
+  const enableTVMode = useCallback(() => {
+    setIsTVMode(true);
+    setView('tv');
+  }, []);
+
+  const disableTVMode = useCallback(() => {
+    setIsTVMode(false);
+    setView('home');
+  }, []);
 
   const startOcaGame = useCallback((playerName: string, vsCpu: boolean, numBots: number) => {
     const colors = ['Rosso', 'Blu', 'Verde', 'Giallo', 'Viola', 'Rosa'];
@@ -742,6 +777,39 @@ export default function Home() {
   }
 
   // ============================================
+  // PHONE CONTROLLER MODE
+  // ============================================
+  if (view === 'phone' || isPhoneMode) {
+    return (
+      <PhoneController
+        roomCode={roomCode}
+        playerName={playerName}
+        playerId={playerId}
+        isHost={false}
+        onConnected={() => {
+          // After connecting, show a simplified lobby
+          setView('lobby');
+        }}
+      />
+    );
+  }
+
+  // ============================================
+  // TV MODE
+  // ============================================
+  if (view === 'tv') {
+    return (
+      <TVMode
+        roomCode={roomCode}
+        gameType={gameType}
+        players={players}
+        gameState={gameState}
+        onExit={disableTVMode}
+      />
+    );
+  }
+
+  // ============================================
   // LOBBY SCREEN
   // ============================================
   if (view === 'lobby') {
@@ -787,21 +855,35 @@ export default function Home() {
           </div>
           
           {/* Buttons */}
-          <div className="flex gap-3">
-            <button
-              onClick={() => { setView('home'); setRoomCode(''); setPlayers([]); }}
-              className="flex-1 py-3 bg-gray-700 text-white font-semibold rounded-xl hover:bg-gray-600 transition-colors"
-            >
-              ← Indietro
-            </button>
+          <div className="flex flex-col gap-3">
+            {/* TV Mode Button - Show as big feature */}
             {isHost && (
-              <button
-                onClick={startGame}
-                className={`flex-2 py-3 bg-gradient-to-r ${game.gradient} text-white font-bold rounded-xl hover:opacity-90 transition-opacity px-8`}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={enableTVMode}
+                className="w-full py-4 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 text-white font-bold rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-xl transition-all"
               >
-                🚀 INIZIA
-              </button>
+                📺 Modalità TV - Mostra su Schermo Grande
+              </motion.button>
             )}
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setView('home'); setRoomCode(''); setPlayers([]); }}
+                className="flex-1 py-3 bg-gray-700 text-white font-semibold rounded-xl hover:bg-gray-600 transition-colors"
+              >
+                ← Indietro
+              </button>
+              {isHost && (
+                <button
+                  onClick={startGame}
+                  className={`flex-1 py-3 bg-gradient-to-r ${game.gradient} text-white font-bold rounded-xl hover:opacity-90 transition-opacity`}
+                >
+                  🚀 INIZIA
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </main>

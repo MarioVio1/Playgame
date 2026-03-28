@@ -1202,7 +1202,6 @@ function processCpuTurns(room: any) {
               'Lavoro': ['Ragioniere', 'Receptionist', 'Ristoratore', 'Regista', 'Ricercatore'],
               'Fiore': ['Rosa', 'Rododendro', 'Romice', 'Ranuncolo'],
             },
-            },
             'S': {
               'Nome': ['Stefano', 'Sara', 'Sergio', 'Sonia', 'Salvatore', 'Silvia', 'Simone', 'Sandro'],
               'Città': ['Salerno', 'Sassari', 'Siena', 'Siracusa', 'Savona', 'Sondrio', 'Spoleto'],

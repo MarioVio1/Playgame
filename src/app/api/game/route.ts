@@ -1584,6 +1584,17 @@ export async function POST(request: NextRequest) {
           });
         }
 
+        if (room.gameType === 'giocodelloca') {
+          room.gameState.phase = 'waiting'; // Waiting for dice roll
+          room.gameState.currentTurn = room.players[0].id;
+          room.gameState.lastDiceResult = null;
+          room.gameState.lastAction = null;
+          room.gameState.players.forEach((p: any) => {
+            p.position = 0;
+            p.skipNextTurn = false;
+          });
+        }
+
         room.lastUpdate = Date.now();
         
         if (room.vsCpu) {
@@ -1770,6 +1781,110 @@ export async function POST(request: NextRequest) {
           hand: player.hand,
           opponentAction: room.gameState.lastAction?.message 
         });
+      }
+
+      case 'rollDice': {
+        const room = rooms.get(roomCode?.toUpperCase());
+        if (!room) return NextResponse.json({ success: false, error: 'Stanza non trovata' });
+        
+        if (room.gameType !== 'giocodelloca') return NextResponse.json({ success: false, error: 'Non è Gioco dell\'Oca' });
+        
+        const state = room.gameState;
+        if (state.currentTurn !== playerId) return NextResponse.json({ success: false, error: 'Non è il tuo turno' });
+        
+        const player = state.players.find((p: any) => p.id === playerId);
+        if (!player) return NextResponse.json({ success: false, error: 'Giocatore non trovato' });
+        
+        // Check if player must skip turn
+        if (player.skipNextTurn) {
+          player.skipNextTurn = false;
+          const currentIdx = state.players.findIndex((p: any) => p.id === playerId);
+          const nextIdx = (currentIdx + 1) % state.players.length;
+          state.currentTurn = state.players[nextIdx].id;
+          state.lastAction = { playerId, message: `${player.name} salta il turno (Locanda)` };
+          state.lastDiceResult = null;
+          room.lastUpdate = Date.now();
+          return NextResponse.json({ success: true, gameState: state, skipped: true });
+        }
+        
+        // Roll dice (1-6)
+        const diceResult = Math.floor(Math.random() * 6) + 1;
+        let newPosition = player.position + diceResult;
+        
+        // Special cells logic
+        let specialMessage = '';
+        
+        // Win condition
+        if (newPosition === 63) {
+          player.position = 63;
+          state.phase = 'gameOver';
+          state.winner = playerId;
+          state.lastAction = { playerId, message: `🎉 ${player.name} ha vinto!` };
+          state.lastDiceResult = diceResult;
+          room.lastUpdate = Date.now();
+          return NextResponse.json({ success: true, gameState: state, winner: playerId });
+        }
+        
+        // Overshoot goes back
+        if (newPosition > 63) {
+          newPosition = 63 - (newPosition - 63);
+          specialMessage = ` (torna al ${newPosition})`;
+        }
+        
+        // Special cells
+        const specialCells: Record<number, { type: string; message: string; effect: string }> = {
+          5: { type: 'bridge', message: '🌉 Ponte - Vai al 12!', effect: 'jump12' },
+          6: { type: 'goose', message: '🪿 Oca - Avanza!', effect: 'extraTurn' },
+          9: { type: 'goose', message: '🪿 Oca - Avanza!', effect: 'extraTurn' },
+          14: { type: 'bridge', message: '🌉 Ponte - Vieni dal 5!', effect: '' },
+          18: { type: 'goose', message: '🪿 Oca - Avanza!', effect: 'extraTurn' },
+          27: { type: 'goose', message: '🪿 Oca - Avanza!', effect: 'extraTurn' },
+          31: { type: 'goose', message: '🪿 Oca - Avanza!', effect: 'extraTurn' },
+          35: { type: 'goose', message: '🪿 Oca - Avanza!', effect: 'extraTurn' },
+          41: { type: 'goose', message: '🪿 Oca - Avanza!', effect: 'extraTurn' },
+          50: { type: 'goose', message: '🪿 Oca - Avanza!', effect: 'extraTurn' },
+          59: { type: 'goose', message: '🪿 Oca - Avanza!', effect: 'extraTurn' },
+          52: { type: 'death', message: '💀 Morte - Torna all\'1!', effect: 'jump1' },
+          19: { type: 'prison', message: '🏢 Prigione - Salta 1 turno!', effect: 'skip1' },
+          32: { type: 'well', message: '🪣 Pozzo - Aspetta!', effect: 'wait' },
+          42: { type: 'labyrinth', message: '🌀 Labirinto - Torna al 30!', effect: 'jump30' },
+          45: { type: 'inn', message: '🏨 Locanda - Salta il turno!', effect: 'skipTurn' },
+          54: { type: 'goose', message: '🪿 Oca - Avanza!', effect: 'extraTurn' },
+        };
+        
+        const special = specialCells[newPosition];
+        if (special) {
+          if (special.effect === 'jump12') newPosition = 12;
+          else if (special.effect === 'jump1') newPosition = 1;
+          else if (special.effect === 'jump30') newPosition = 30;
+          else if (special.effect === 'skip1') player.skipNextTurn = true;
+          else if (special.effect === 'skipTurn') player.skipNextTurn = true;
+        }
+        
+        player.position = newPosition;
+        state.lastDiceResult = diceResult;
+        state.lastAction = { 
+          playerId, 
+          message: `🎲 ${player.name} ha tirato ${diceResult} e va al ${newPosition}${specialMessage || (special ? '\n' + special.message : '')}` 
+        };
+        
+        // Check for goose extra turn
+        if (special?.type === 'goose') {
+          state.currentTurn = playerId;
+          state.lastAction.message += ' 🪿 Turno extra!';
+        } else {
+          const currentIdx = state.players.findIndex((p: any) => p.id === playerId);
+          const nextIdx = (currentIdx + 1) % state.players.length;
+          state.currentTurn = state.players[nextIdx].id;
+        }
+        
+        room.lastUpdate = Date.now();
+        
+        if (room.vsCpu) {
+          processCpuTurns(room);
+        }
+        
+        return NextResponse.json({ success: true, gameState: state, diceResult });
       }
 
       case 'drawCard': {

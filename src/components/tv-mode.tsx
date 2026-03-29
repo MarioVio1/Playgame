@@ -32,12 +32,13 @@ export function TVMode({ roomCode, gameType, players, gameState, onExit }: TVMod
 
   const gameEmoji = {
     forza4: '🔴',
+    giocodelloca: '🪿',
     briscola: '🃏',
     uno: '🎴',
     scopa: '🪙',
     indovinachi: '🔍',
     nomecitta: '📝',
-    dama: '♛',
+   ama: '♛',
     mercanteinfiera: '🎪',
   }[gameType] || '🎮';
 

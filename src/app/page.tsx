@@ -497,43 +497,51 @@ export default function Home() {
   );
 
   // ============================================
-  // HOME SCREEN
+  // HOME SCREEN - AMAZON LUNA STYLE
   // ============================================
   if (view === 'home') {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/30 to-slate-900 overflow-hidden relative">
-        {/* Animated Background */}
+      <main className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/30 to-slate-950 overflow-hidden relative">
+        {/* Cinematic Background */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute inset-0 opacity-20">
-            {[...Array(30)].map((_, i) => (
+          {/* Animated particles */}
+          <div className="absolute inset-0">
+            {[...Array(50)].map((_, i) => (
               <motion.div
                 key={i}
-                className="absolute w-2 h-2 bg-purple-400 rounded-full"
+                className="absolute w-1 h-1 bg-cyan-400/60 rounded-full"
                 style={{
                   left: `${Math.random() * 100}%`,
                   top: `${Math.random() * 100}%`,
                 }}
                 animate={{
-                  y: [-30, 30, -30],
-                  opacity: [0.1, 0.6, 0.1],
+                  y: [-50, 50],
+                  opacity: [0, 0.8, 0],
                 }}
                 transition={{
-                  duration: 3 + Math.random() * 3,
+                  duration: 4 + Math.random() * 4,
                   repeat: Infinity,
                   delay: Math.random() * 2,
                 }}
               />
             ))}
           </div>
+          
+          {/* Orb lights */}
           <motion.div
-            className="absolute -top-60 -right-60 w-[600px] h-[600px] bg-purple-600 rounded-full blur-[150px] opacity-20"
-            animate={{ scale: [1, 1.2, 1], rotate: [0, 180, 360] }}
-            transition={{ duration: 30, repeat: Infinity }}
+            className="absolute -top-40 -right-40 w-[800px] h-[800px] bg-purple-600/20 rounded-full blur-[200px]"
+            animate={{ scale: [1, 1.15, 1], x: [0, 50, 0] }}
+            transition={{ duration: 20, repeat: Infinity }}
           />
           <motion.div
-            className="absolute -bottom-60 -left-60 w-[600px] h-[600px] bg-cyan-600 rounded-full blur-[150px] opacity-20"
-            animate={{ scale: [1, 1.3, 1], rotate: [360, 180, 0] }}
-            transition={{ duration: 35, repeat: Infinity }}
+            className="absolute -bottom-40 -left-40 w-[800px] h-[800px] bg-cyan-600/20 rounded-full blur-[200px]"
+            animate={{ scale: [1, 1.2, 1], x: [0, -30, 0] }}
+            transition={{ duration: 25, repeat: Infinity }}
+          />
+          <motion.div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-pink-600/10 rounded-full blur-[200px]"
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 15, repeat: Infinity }}
           />
         </div>
 
@@ -543,111 +551,204 @@ export default function Home() {
           <motion.div 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="fixed top-16 left-1/2 -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-2xl z-50 cursor-pointer shadow-xl" onClick={() => setError('')}>
+            className="fixed top-16 left-1/2 -translate-x-1/2 bg-red-500/90 backdrop-blur text-white px-6 py-3 rounded-2xl z-50 cursor-pointer shadow-xl border border-red-400/50" onClick={() => setError('')}>
             ⚠️ {error}
           </motion.div>
         )}
         
-        {/* Header */}
-        <header className="relative z-10 bg-black/20 backdrop-blur-xl border-b border-white/10">
+        {/* Header - Netflix/Luna style */}
+        <header className="relative z-20 bg-gradient-to-b from-black/80 to-transparent">
           <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
             <motion.div 
-              initial={{ x: -50, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              className="flex items-center gap-3"
-            >
-              <motion.div 
-                className="w-12 h-12 bg-gradient-to-br from-purple-500 via-pink-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30"
-                animate={{ rotate: [0, 5, -5, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <span className="text-2xl">🎮</span>
-              </motion.div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-white via-purple-200 to-cyan-200 bg-clip-text text-transparent">
-                  Playgame
-                </h1>
-                <p className="text-purple-300 text-xs">Party Games Platform</p>
-              </div>
-            </motion.div>
-            <motion.div 
-              initial={{ x: 50, opacity: 0 }}
+              initial={{ x: -30, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               className="flex items-center gap-4"
             >
-              <span className="flex items-center gap-2 text-green-400 text-sm font-medium">
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                Online
-              </span>
+              <motion.div 
+                className="w-14 h-14 bg-gradient-to-br from-purple-500 via-pink-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-2xl shadow-purple-500/40"
+                animate={{ rotate: [0, 3, -3, 0] }}
+                transition={{ duration: 3, repeat: Infinity }}
+              >
+                <span className="text-3xl">🎮</span>
+              </motion.div>
+              <div>
+                <h1 className="text-3xl font-black bg-gradient-to-r from-white via-purple-200 to-cyan-200 bg-clip-text text-transparent tracking-tight">
+                  PLAYGAME
+                </h1>
+                <p className="text-purple-300/80 text-xs font-medium tracking-widest">STREAMING PARTY</p>
+              </div>
+            </motion.div>
+            
+            <motion.div 
+              initial={{ x: 30, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              className="flex items-center gap-4"
+            >
+              {/* Quick Join */}
+              <div className="hidden md:flex items-center gap-2 bg-white/5 backdrop-blur-md rounded-full px-4 py-2 border border-white/10">
+                <span className="text-gray-400 text-sm">Codice:</span>
+                <input
+                  type="text"
+                  placeholder="XXXX"
+                  value={roomCode}
+                  onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                  className="w-16 bg-transparent text-white font-mono text-center focus:outline-none"
+                  maxLength={4}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-500/50"></span>
+                <span className="text-green-400 text-sm font-medium">LIVE</span>
+              </div>
             </motion.div>
           </div>
         </header>
 
         {/* Hero Section */}
-        <section className="relative z-10 max-w-7xl mx-auto px-4 py-16">
+        <section className="relative z-10 max-w-7xl mx-auto px-4 pt-8 pb-12">
           <motion.div 
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-center mb-16"
+            className="text-center mb-12"
           >
-            <h2 className="text-5xl md:text-6xl font-bold text-white mb-4">
-              Scegli il tuo{' '}
+            <h2 className="text-6xl md:text-7xl font-black text-white mb-4 tracking-tight">
+              Gioca{' '}
               <span className="bg-gradient-to-r from-amber-400 via-pink-500 to-purple-500 bg-clip-text text-transparent">
-                Gioco
+                Insieme
               </span>
             </h2>
-            <p className="text-xl text-purple-200 max-w-2xl mx-auto">
-              Gioca con amici o contro la CPU. Divertiti con i classici giochi da tavolo italiani!
+            <p className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto font-light">
+              La piattaforma di party games per TV e mobile.{' '}
+              <span className="text-cyan-400 font-medium">Connetti, Gioca, Divertiti!</span>
             </p>
+          </motion.div>
+
+          {/* Connection Modes - Luna Style */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-12"
+          >
+            {/* TV Mode Card */}
+            <motion.div
+              whileHover={{ scale: 1.02, y: -5 }}
+              className="group relative bg-gradient-to-br from-purple-900/60 to-blue-900/40 backdrop-blur-xl rounded-3xl p-6 border border-white/10 cursor-pointer overflow-hidden"
+              onClick={() => setView('tv')}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative flex items-center gap-4">
+                <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-2xl shadow-purple-500/30">
+                  <span className="text-4xl">📺</span>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-white">Modalità TV</h3>
+                  <p className="text-gray-400">Gioca sul grande schermo</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded-full">CONSIGLIATO</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Phone Controller Card */}
+            <motion.div
+              whileHover={{ scale: 1.02, y: -5 }}
+              className="group relative bg-gradient-to-br from-cyan-900/60 to-blue-900/40 backdrop-blur-xl rounded-3xl p-6 border border-white/10 cursor-pointer overflow-hidden"
+              onClick={() => {
+                setRoomCode('');
+                setIsPhoneMode(true);
+                showNotification('Usa questo dispositivo come controller!', 'info');
+              }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative flex items-center gap-4">
+                <div className="w-20 h-20 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-2xl shadow-cyan-500/30">
+                  <span className="text-4xl">📱</span>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-white">Controller</h3>
+                  <p className="text-gray-400"> usa il telefono come joystick</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded-full">MULTIPLAYER</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           </motion.div>
 
           {/* Player Setup */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="max-w-md mx-auto mb-12"
+            transition={{ delay: 0.4 }}
+            className="max-w-2xl mx-auto mb-10"
           >
-            <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-6 border border-white/10 shadow-2xl">
-              <label className="block text-purple-200 text-sm font-medium mb-2">👤 Il tuo nome</label>
-              <input
-                type="text"
-                placeholder="Come ti chiami?"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                maxLength={20}
-              />
-              
-              <div className="flex items-center gap-3 mt-4">
-                <input
-                  type="checkbox"
-                  id="vsCpu"
-                  checked={vsCpu}
-                  onChange={(e) => setVsCpu(e.target.checked)}
-                  className="w-5 h-5 rounded bg-gray-700 border-gray-600 text-purple-500 focus:ring-purple-500"
-                />
-                <label htmlFor="vsCpu" className="text-purple-200 cursor-pointer">🤖 Gioca contro il PC</label>
+            <div className="bg-white/5 backdrop-blur-2xl rounded-3xl p-6 border border-white/10 shadow-2xl">
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Name Input */}
+                <div>
+                  <label className="block text-purple-200 text-sm font-medium mb-2">👤 Il tuo nome</label>
+                  <input
+                    type="text"
+                    placeholder="Nickname"
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value)}
+                    className="w-full px-5 py-4 bg-black/30 border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all text-lg"
+                    maxLength={20}
+                  />
+                </div>
+                
+                {/* Game Mode */}
+                <div>
+                  <label className="block text-purple-200 text-sm font-medium mb-2">⚙️ Modalità</label>
+                  <div className="flex gap-2">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setVsCpu(false)}
+                      className={`flex-1 py-4 rounded-2xl font-bold transition-all ${
+                        !vsCpu 
+                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30' 
+                          : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                      }`}
+                    >
+                      👥 Multiplayer
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setVsCpu(true)}
+                      className={`flex-1 py-4 rounded-2xl font-bold transition-all ${
+                        vsCpu 
+                          ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/30' 
+                          : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                      }`}
+                    >
+                      🤖 CPU
+                    </motion.button>
+                  </div>
+                </div>
               </div>
               
               {vsCpu && (
                 <motion.div 
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
-                  className="mt-4"
+                  className="mt-6 pt-6 border-t border-white/10"
                 >
-                  <label className="block text-purple-200 text-sm font-medium mb-2">Numero di Bot</label>
-                  <div className="flex gap-2">
+                  <label className="block text-purple-200 text-sm font-medium mb-3">Numero avversari</label>
+                  <div className="flex gap-3">
                     {[1, 2, 3, 4].map(n => (
                       <motion.button
                         key={n}
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setNumBots(n)}
-                        className={`w-12 h-12 rounded-xl font-bold transition-all duration-300 ${
+                        className={`flex-1 py-3 rounded-xl font-bold transition-all duration-300 ${
                           numBots === n 
-                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30' 
+                            ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/30' 
                             : 'bg-white/10 text-purple-200 hover:bg-white/20'
                         }`}
                       >
@@ -657,40 +758,75 @@ export default function Home() {
                   </div>
                 </motion.div>
               )}
+              
+              {/* Join Room Input */}
+              <div className="mt-6 pt-6 border-t border-white/10">
+                <label className="block text-purple-200 text-sm font-medium mb-3">🔗 Entra in una stanza</label>
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    placeholder="Codice (4 lettere)"
+                    value={roomCode}
+                    onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                    className="flex-1 px-5 py-4 bg-black/30 border border-white/10 rounded-2xl text-white text-center text-2xl font-mono tracking-[0.5em] placeholder-gray-600 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
+                    maxLength={4}
+                  />
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={joinRoom}
+                    disabled={roomCode.length !== 4}
+                    className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-2xl shadow-lg shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    ENTRA
+                  </motion.button>
+                </div>
+              </div>
             </div>
           </motion.div>
 
-          {/* Join Room */}
+          {/* Featured Banner */}
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="max-w-md mx-auto mb-16"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.5 }}
+            className="max-w-4xl mx-auto mb-12"
           >
-            <div className="flex gap-3">
-              <input
-                type="text"
-                placeholder="Codice stanza"
-                value={roomCode}
-                onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                className="flex-1 px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl text-white text-center text-xl font-mono tracking-widest placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
-                maxLength={4}
-              />
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={joinRoom}
-                className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl shadow-lg shadow-purple-500/30 hover:from-purple-400 hover:to-pink-400 transition-all"
-              >
-                ENTRA
-              </motion.button>
+            <div className="relative bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-cyan-500/20 backdrop-blur-xl rounded-3xl p-8 border border-white/10 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-cyan-500/5" />
+              <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="text-center md:text-left">
+                  <span className="inline-block px-3 py-1 bg-amber-500/20 text-amber-400 text-sm font-bold rounded-full mb-2">✨ NOVITÀ</span>
+                  <h3 className="text-3xl font-bold text-white">Gioco dell'Oca</h3>
+                  <p className="text-gray-300 mt-1">Il classico italiano - Multiplayer online!</p>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => createRoom('giocodelloca')}
+                  className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-2xl shadow-lg shadow-amber-500/30"
+                >
+                  GIOCA ORA 🪿
+                </motion.button>
+              </div>
             </div>
           </motion.div>
 
-          {/* Games Grid */}
+          {/* Section Title */}
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.6 }}
+            className="flex items-center gap-4 mb-6"
+          >
+            <h3 className="text-2xl font-bold text-white">Tutti i Giochi</h3>
+            <div className="flex-1 h-px bg-gradient-to-r from-white/20 to-transparent" />
+          </motion.div>
+
+          {/* Games Grid - Premium Cards */}
           <motion.div 
             layout
-            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"
           >
             <AnimatePresence mode="popLayout">
               {GAMES.map((game, index) => (
@@ -700,7 +836,7 @@ export default function Home() {
                   initial={{ opacity: 0, scale: 0.8, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.8, y: -20 }}
-                  transition={{ delay: index * 0.05 }}
+                  transition={{ delay: index * 0.03 }}
                   onHoverStart={() => setHoveredGame(game.id)}
                   onHoverEnd={() => setHoveredGame(null)}
                 >
@@ -709,6 +845,8 @@ export default function Home() {
                       if ((game as any).isOca) {
                         if (roomCode && playerName) {
                           createRoom(game.id);
+                        } else if (!vsCpu) {
+                          showNotification('Inserisci un nome e scegli CPU o Multiplayer', 'info');
                         } else {
                           startOcaGame(playerName, vsCpu, numBots);
                         }
@@ -716,69 +854,94 @@ export default function Home() {
                         createRoom(game.id);
                       }
                     }}
-                    whileHover={{ y: -8, scale: 1.02 }}
+                    whileHover={{ y: -12, scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className={`relative w-full overflow-hidden rounded-3xl shadow-xl transition-shadow duration-300 ${
-                      hoveredGame === game.id ? 'shadow-2xl shadow-purple-500/30' : ''
+                    className={`relative w-full overflow-hidden rounded-3xl shadow-xl transition-shadow duration-500 ${
+                      hoveredGame === game.id ? 'shadow-2xl shadow-purple-500/40' : ''
                     }`}
                   >
-                    <div className={`bg-gradient-to-br ${game.gradient} p-6 aspect-[4/3] flex flex-col items-center justify-center relative`}>
-                      {/* Glow Effect */}
+                    {/* 3D Card Effect */}
+                    <div className={`bg-gradient-to-br ${game.gradient} p-5 aspect-[4/3] flex flex-col items-center justify-center relative`}>
+                      {/* Animated Glow */}
                       {hoveredGame === game.id && (
                         <motion.div
-                          className="absolute inset-0 bg-white/20"
+                          className="absolute inset-0 bg-white/30"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
+                          transition={{ duration: 0.2 }}
                         />
                       )}
-
-                      {/* Badges */}
-                      <div className="absolute top-3 right-3 flex gap-2">
-                        {(game as any).hot && (
-                          <motion.span 
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            className="px-2 py-1 bg-red-500 text-white text-xs font-bold rounded-full"
-                          >
-                            🔥 HOT
-                          </motion.span>
-                        )}
-                        {(game as any).isOca && (
-                          <motion.span 
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            className="px-2 py-1 bg-green-500 text-white text-xs font-bold rounded-full animate-pulse"
-                          >
-                            NUOVO
-                          </motion.span>
-                        )}
-                      </div>
-
-                      {/* Content */}
+                      
+                      {/* Floating Emoji */}
                       <motion.div
-                        className="text-6xl mb-3"
-                        animate={hoveredGame === game.id ? { scale: [1, 1.2, 1], rotate: [0, 5, -5, 0] } : {}}
-                        transition={{ duration: 0.5 }}
+                        className="text-6xl md:text-7xl mb-2 relative z-10"
+                        animate={hoveredGame === game.id ? { 
+                          scale: [1, 1.15, 1], 
+                          rotate: [0, 8, -8, 0],
+                          y: [0, -8, 0]
+                        } : {}}
+                        transition={{ duration: 0.6 }}
                       >
                         {game.emoji}
                       </motion.div>
-                      <h3 className="text-white font-bold text-lg">{game.name}</h3>
-                      <p className="text-white/80 text-sm mt-1">{game.subtitle}</p>
                       
-                      {/* Play indicator */}
+                      {/* Title */}
+                      <h3 className="text-white font-bold text-lg md:text-xl relative z-10">{game.name}</h3>
+                      <p className="text-white/70 text-xs md:text-sm mt-1 relative z-10">{game.subtitle}</p>
+
+                      {/* Hot Badge */}
+                      {(game as any).hot && (
+                        <motion.div 
+                          initial={{ scale: 0, rotate: -20 }}
+                          animate={{ scale: 1, rotate: 0 }}
+                          className="absolute top-3 right-3"
+                        >
+                          <span className="px-2.5 py-1 bg-red-500 text-white text-xs font-bold rounded-full shadow-lg">
+                            🔥 HOT
+                          </span>
+                        </motion.div>
+                      )}
+                      
+                      {/* New Badge */}
+                      {(game as any).isOca && (
+                        <motion.div 
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute top-3 left-3"
+                        >
+                          <span className="px-2.5 py-1 bg-green-500 text-white text-xs font-bold rounded-full shadow-lg animate-pulse">
+                            NUOVO
+                          </span>
+                        </motion.div>
+                      )}
+                      
+                      {/* Play Button Overlay */}
                       <motion.div
-                        className="absolute bottom-3 right-3 text-2xl opacity-0"
-                        animate={hoveredGame === game.id ? { opacity: 1, x: [0, 5, 0] } : { opacity: 0 }}
-                        transition={{ duration: 0.3 }}
+                        className="absolute bottom-3 right-3"
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={{ opacity: hoveredGame === game.id ? 1 : 0, scale: hoveredGame === game.id ? 1 : 0 }}
+                        transition={{ duration: 0.2 }}
                       >
-                        ▶️
+                        <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                          <span className="text-xl">▶</span>
+                        </div>
                       </motion.div>
                     </div>
                     
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm px-4 py-3 flex justify-between text-sm text-white/80">
-                      <span className="flex items-center gap-1">👥 {game.players}</span>
-                      <span className="flex items-center gap-1">⏱️ {game.time}</span>
+                    {/* Card Footer */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/70 backdrop-blur-md px-4 py-3 flex justify-between items-center">
+                      <span className="flex items-center gap-1.5 text-white/80 text-xs font-medium">
+                        <span>👥</span> {game.players}
+                      </span>
+                      <span className="flex items-center gap-1.5 text-white/60 text-xs">
+                        <span>⏱️</span> {game.time}
+                      </span>
                     </div>
+                    
+                    {/* Hover Glow Border */}
+                    <div className={`absolute inset-0 rounded-3xl border-2 transition-opacity duration-300 ${
+                      hoveredGame === game.id ? 'opacity-100 border-white/30' : 'opacity-0'
+                    }`} />
                   </motion.button>
                 </motion.div>
               ))}
@@ -787,8 +950,13 @@ export default function Home() {
         </section>
 
         {/* Footer */}
-        <footer className="relative z-10 p-6 text-center text-purple-300 text-sm">
-          <p>© 2024 Playgame • Divertiti con gli amici! 🎉</p>
+        <footer className="relative z-10 py-8 text-center">
+          <div className="flex items-center justify-center gap-6 text-gray-500 text-sm mb-4">
+            <a href="#" className="hover:text-white transition-colors">Assistenza</a>
+            <a href="#" className="hover:text-white transition-colors">Privacy</a>
+            <a href="#" className="hover:text-white transition-colors">Termini</a>
+          </div>
+          <p className="text-gray-600 text-sm">© 2024 Playgame • Streaming Party Games</p>
         </footer>
       </main>
     );

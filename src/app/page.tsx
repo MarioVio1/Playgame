@@ -182,6 +182,12 @@ async function gameApi(action: string, data: Record<string, unknown> = {}, retri
 // MAIN COMPONENT
 // ============================================
 export default function Home() {
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
   const [view, setView] = useState<'home' | 'lobby' | 'game' | 'giocooca' | 'tv' | 'phone'>('home');
   const [gameType, setGameType] = useState<string>('');
   const [roomCode, setRoomCode] = useState<string>('');
@@ -207,6 +213,14 @@ export default function Home() {
   const [lastAnswer, setLastAnswer] = useState<boolean | null>(null);
   const [lastQuestion, setLastQuestion] = useState<string>('');
   const [isMyTurnToAnswer, setIsMyTurnToAnswer] = useState(false);
+  
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950/30 to-slate-950 flex items-center justify-center">
+        <div className="text-white text-xl">Caricamento...</div>
+      </div>
+    );
+  }
   const [currentQuestion, setCurrentQuestion] = useState<string>('');
   
   // Dama state

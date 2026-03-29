@@ -8,6 +8,8 @@ import { PhoneController } from '@/components/phone-controller';
 import { UNOCard, UNODeck, DiscardPile } from '@/components/uno-card';
 import { IndovinaChi } from '@/components/indovina-chi';
 import { useSocket } from '@/hooks/useSocket';
+import { useSound } from '@/hooks/useSound';
+import { useAuth } from '@/hooks/useAuth';
 
 // ============================================
 // TYPES
@@ -134,6 +136,9 @@ const GAMES = [
   { id: 'nomecitta', name: 'Nome Città', emoji: '📝', subtitle: 'Nome, Città, Lavoro...', players: '2-8', time: '10-20 min', gradient: 'from-pink-500 to-rose-500' },
   { id: 'dama', name: 'Dama', emoji: '♛', subtitle: 'Il classico da tavolo', players: '2', time: '15-30 min', gradient: 'from-violet-500 to-purple-500' },
   { id: 'mercanteinfiera', name: 'Mercante in Fiera', emoji: '🎪', subtitle: 'Vinci il jackpot', players: '2-6', time: '20-40 min', gradient: 'from-orange-500 to-amber-500' },
+  { id: 'memory', name: 'Memory', emoji: '🧠', subtitle: 'Trova le coppie!', players: '1-2', time: '5-10 min', gradient: 'from-emerald-500 to-teal-500' },
+  { id: 'tombola', name: 'Tombola', emoji: '🎱', subtitle: 'Il classico natalizio', players: '2-10', time: '30-60 min', gradient: 'from-red-600 to-green-600' },
+  { id: 'tris', name: 'Tris', emoji: '❌⭕', subtitle: 'Chi fa tris vince!', players: '2', time: '2-5 min', gradient: 'from-blue-500 to-indigo-500' },
 ];
 
 // ============================================
@@ -221,7 +226,11 @@ export default function Home() {
   );
 
   // Gioco dell'Oca state
-  const [ocaPlayers, setOcaPlayers] = useState<{id: string; name: string; position: number; color: string; isCpu: boolean}[]>([]);
+    const [ocaPlayers, setOcaPlayers] = useState<{id: string; name: string; position: number; color: string; isCpu: boolean}[]>([]);
+
+  // Gioco dell'Oca dice animation
+  const [isRolling, setIsRolling] = useState(false);
+  const [diceResult, setDiceResult] = useState<number | null>(null);
 
   // TV Mode state
   const [isTVMode, setIsTVMode] = useState(false);
@@ -238,6 +247,19 @@ export default function Home() {
     notifyGameStart,
     resetGameStarted
   } = useSocket();
+
+  // Sound effects
+  const { playDice, playWin, playLose, playClick, playCard: playCardSound, playError, playSuccess, playTurn } = useSound();
+
+  // Auth
+  const { user, login, logout, isAuthenticated } = useAuth();
+
+  // Sync user with player name
+  useEffect(() => {
+    if (user && !playerName) {
+      setPlayerName(user.name);
+    }
+  }, [user, playerName]);
 
   // Sync socket players with local state
   useEffect(() => {
@@ -370,7 +392,12 @@ export default function Home() {
       }
       
       if (data.gameState) {
+        const prevTurn = gameState?.currentTurn;
         setGameState(data.gameState);
+        // Play turn sound when it's my turn
+        if (data.gameState.currentTurn === playerId && prevTurn !== playerId) {
+          playTurn();
+        }
         if (data.lastAction && data.lastAction.playerId !== playerId) {
           setOpponentAction(data.lastAction.message);
           setTimeout(() => setOpponentAction(null), 2000);
@@ -492,6 +519,7 @@ export default function Home() {
     if (playingCard) return;
     setPlayingCard(cardId);
     setOpponentAction(null);
+    playCardSound();
     try {
       const res = await gameApi('playCard', { roomCode, playerId, cardId, captureIndex });
       if (res.success) {
@@ -665,6 +693,39 @@ export default function Home() {
                 <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-500/50"></span>
                 <span className="text-green-400 text-sm font-medium">LIVE</span>
               </div>
+
+              {/* User Profile */}
+              {isAuthenticated ? (
+                <div className="flex items-center gap-3 ml-4 pl-4 border-l border-white/20">
+                  <div className="text-right hidden sm:block">
+                    <p className="text-white text-sm font-medium">{user?.name}</p>
+                    <p className="text-purple-300 text-xs">Profilo</p>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={logout}
+                    className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold shadow-lg"
+                  >
+                    {user?.name?.[0]?.toUpperCase() || '?'}
+                  </motion.button>
+                </div>
+              ) : (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    const name = prompt('Inserisci il tuo nome per continuare:');
+                    if (name?.trim()) {
+                      login(name.trim());
+                      setPlayerName(name.trim());
+                    }
+                  }}
+                  className="ml-4 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full text-white text-sm font-medium shadow-lg"
+                >
+                  Accedi
+                </motion.button>
+              )}
             </motion.div>
           </div>
         </header>
@@ -1892,26 +1953,51 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Dice button */}
+              {/* Dice button with animation */}
               {isMyTurn && (
-                <button
+                <motion.button
+                  animate={isRolling ? { rotate: [0, 360, 720] } : {}}
+                  transition={isRolling ? { duration: 0.5, repeat: 2 } : {}}
                   onClick={async () => {
-                    const res = await gameApi('rollDice', { roomCode, playerId });
-                    if (res.success) {
-                      setGameState(res.gameState);
-                      if (res.winner) {
-                        showNotification(res.winner === playerId ? '🎉 HAI VINTO!' : '😢 Hai perso!', res.winner === playerId ? 'success' : 'error');
-                      } else if (res.skipped) {
-                        showNotification('⏭️ Salti il turno!', 'info');
+                    setIsRolling(true);
+                    setDiceResult(null);
+                    playDice();
+                    // Animate dice rolling
+                    const interval = setInterval(() => {
+                      setDiceResult(Math.floor(Math.random() * 6) + 1);
+                    }, 100);
+                    
+                    setTimeout(async () => {
+                      clearInterval(interval);
+                      const res = await gameApi('rollDice', { roomCode, playerId });
+                      setIsRolling(false);
+                      if (res.success) {
+                        setDiceResult(res.lastDiceResult);
+                        setGameState(res.gameState);
+                        if (res.winner) {
+                          res.winner === playerId ? playWin() : playLose();
+                          showNotification(res.winner === playerId ? '🎉 HAI VINTO!' : '😢 Hai perso!', res.winner === playerId ? 'success' : 'error');
+                        } else if (res.skipped) {
+                          showNotification('⏭️ Salti il turno!', 'info');
+                        }
+                      } else {
+                        setDiceResult(null);
+                        playError();
+                        showNotification(res.error || 'Errore', 'error');
                       }
-                    } else {
-                      showNotification(res.error || 'Errore', 'error');
-                    }
+                    }, 1000);
                   }}
-                  className="w-24 h-24 bg-gradient-to-br from-red-500 to-orange-600 rounded-2xl text-white font-bold text-4xl shadow-lg hover:scale-105 active:scale-95 transition-transform mb-4"
+                  className="w-28 h-28 bg-gradient-to-br from-red-500 to-orange-600 rounded-2xl text-white font-bold shadow-lg hover:scale-105 active:scale-95 transition-transform mb-4 flex flex-col items-center justify-center"
                 >
-                  🎲
-                </button>
+                  {isRolling ? (
+                    <div className="text-5xl">🎲</div>
+                  ) : diceResult ? (
+                    <div className="text-5xl">{diceResult}</div>
+                  ) : (
+                    <div className="text-5xl">🎲</div>
+                  )}
+                  <span className="text-xs mt-1">{isRolling ? 'Tirando...' : 'TIRA!'}</span>
+                </motion.button>
               )}
 
               {/* Players positions */}
@@ -1935,10 +2021,74 @@ export default function Home() {
                 ))}
               </div>
 
-              {/* Board preview (simplified) */}
-              <div className="bg-black/30 rounded-2xl p-3 max-w-xs">
-                <div className="text-center text-gray-400 text-sm">
-                  🎯 Obiettivo: Casella 63 🏆
+              {/* Visual Board */}
+              <div className="bg-gradient-to-br from-amber-800/50 to-orange-900/50 rounded-3xl p-4 border-2 border-amber-500/30">
+                <div className="text-center text-amber-200 text-sm mb-2 font-semibold">🎯 Obiettivo: Casella 63 🏆</div>
+                
+                {/* Gioco dell'Oca Board - Spiral Layout */}
+                <div className="relative">
+                  {/* Board grid - 9x9 outer, center empty for decoration */}
+                  <div className="grid grid-cols-9 gap-1">
+                    {[
+                      // Row 1 (top) - right to left: 63, 62, 61, 60, 59, 58, 57, 56, 55
+                      [63, 62, 61, 60, 59, 58, 57, 56, 55],
+                      // Row 2
+                      [46, 47, 48, 49, 50, 51, 52, 53, 54],
+                      // Row 3
+                      [45, 44, 43, 42, 41, 40, 39, 38, 37],
+                      // Row 4
+                      [28, 29, 30, 31, 32, 33, 34, 35, 36],
+                      // Row 5
+                      [27, 26, 25, 24, 23, 22, 21, 20, 19],
+                      // Row 6
+                      [10, 11, 12, 13, 14, 15, 16, 17, 18],
+                      // Row 7
+                      [9, 8, 7, 6, 5, 4, 3, 2, 1],
+                    ].map((row, rowIdx) => (
+                      row.map((num, colIdx) => {
+                        const playersHere = ocaPlayers?.filter(p => p.position === num) || [];
+                        const isSpecial = [6, 9, 18, 27, 36, 45, 54, 63].includes(num);
+                        const isBridge = num === 6 || num === 12 || num === 20 || num === 42;
+                        const isDeath = num === 58;
+                        
+                        return (
+                          <div
+                            key={num}
+                            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex flex-col items-center justify-center text-xs relative ${
+                              num === 1 ? 'bg-green-500/80 ring-2 ring-green-300' :
+                              num === 63 ? 'bg-yellow-500/80 ring-2 ring-yellow-300' :
+                              isDeath ? 'bg-red-900/80 ring-2 ring-red-500' :
+                              isBridge ? 'bg-blue-600/60' :
+                              isSpecial ? 'bg-amber-600/60' :
+                              'bg-amber-900/40'
+                            }`}
+                          >
+                            <span className={`font-bold ${num === 1 || num === 63 ? 'text-white' : 'text-amber-200/70'}`}>
+                              {num}
+                            </span>
+                            {/* Player tokens */}
+                            {playersHere.map((p, pIdx) => (
+                              <div
+                                key={p.id}
+                                className={`absolute w-4 h-4 rounded-full border border-white shadow-lg ${
+                                  PLAYER_COLORS[ocaPlayers?.indexOf(p) % PLAYER_COLORS.length]?.bg || 'bg-gray-500'
+                                }`}
+                                style={{
+                                  left: pIdx === 0 ? '1px' : pIdx === 1 ? '50%' : 'auto',
+                                  right: pIdx === 2 ? '1px' : 'auto',
+                                  transform: pIdx > 1 ? 'scale(0.7)' : 'none',
+                                }}
+                              />
+                            ))}
+                            {/* Special icons */}
+                            {num === 6 && <span className="absolute -top-1 -right-1 text-[8px]">🌉</span>}
+                            {num === 9 && <span className="absolute -top-1 -right-1 text-[8px]]">🪿</span>}
+                            {num === 58 && <span className="absolute -top-1 -right-1 text-[8px]">💀</span>}
+                          </div>
+                        );
+                      })
+                    ))}
+                  </div>
                 </div>
               </div>
             </>
@@ -1947,6 +2097,278 @@ export default function Home() {
           <button onClick={() => { setView('home'); setGameState(null); setRoomCode(''); }} className="mt-4 text-white/60">
             ← Esci
           </button>
+        </main>
+      );
+    }
+
+    // MEMORY GAME
+    if (gameType === 'memory') {
+      const memoryState = gameState as any;
+      const cards = memoryState?.cards || [];
+      const isGameOver = memoryState?.phase === 'gameOver';
+      const winner = memoryState?.winner;
+
+      return (
+        <main className="min-h-screen bg-gradient-to-br from-emerald-900 via-teal-800/20 to-emerald-900 flex flex-col items-center p-2 sm:p-4">
+          {notificationEl}
+          {opponentActionEl}
+          
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">🧠 Memory</h1>
+          
+          <div className="bg-black/40 px-4 py-1 rounded-full mb-3">
+            <span className="text-emerald-300 font-mono text-lg">{roomCode}</span>
+          </div>
+
+          {isGameOver ? (
+            <div className="text-center">
+              <div className="text-6xl mb-4">🏆</div>
+              <h2 className="text-2xl font-bold text-white mb-4">
+                {winner === playerId ? 'HAI VINTO!' : winner === 'draw' ? 'Pareggio!' : `${memoryState.players?.find((p: any) => p.id === winner)?.name} ha vinto!`}
+              </h2>
+              <p className="text-white mb-4">Mosse totali: {memoryState.moves}</p>
+              <button
+                onClick={() => { setView('home'); setGameState(null); setRoomCode(''); }}
+                className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold rounded-2xl"
+              >
+                🏠 Nuova Partita
+              </button>
+            </div>
+          ) : (
+            <>
+              {isMyTurn && (
+                <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-3 rounded-full text-white font-bold mb-4">
+                  🎯 È il tuo turno! Scegli una carta
+                </div>
+              )}
+
+              <div className="text-white mb-2">
+                Mosse: {memoryState.moves} | Il tuo punteggio: {memoryState.scores?.[playerId] || 0}
+              </div>
+
+              <div className="grid grid-cols-4 gap-2 sm:gap-3 max-w-sm sm:max-w-md">
+                {cards.map((card: any) => (
+                  <button
+                    key={card.id}
+                    onClick={() => {
+                      if (isMyTurn && !card.isFlipped && !card.isMatched && memoryState.flippedCards.length < 2) {
+                        playCard();
+                        gameApi('playMemory', { roomCode, playerId, cardId: card.id }).then((res) => {
+                          if (res.success) {
+                            setGameState(res.gameState);
+                            playFlip();
+                          }
+                        });
+                      }
+                    }}
+                    disabled={!isMyTurn || card.isFlipped || card.isMatched || memoryState.flippedCards.length >= 2}
+                    className={`w-16 h-20 sm:w-20 sm:h-24 rounded-xl text-3xl sm:text-4xl flex items-center justify-center transition-all ${
+                      card.isFlipped || card.isMatched
+                        ? 'bg-white rotate-0'
+                        : 'bg-gradient-to-br from-emerald-600 to-teal-700 rotate-y-180'
+                    } ${!isMyTurn || card.isFlipped || card.isMatched ? '' : 'hover:scale-105 active:scale-95'}`}
+                  >
+                    {(card.isFlipped || card.isMatched) ? card.emoji : '❓'}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => { setView('home'); setGameState(null); }}
+                className="mt-6 px-6 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20"
+              >
+                ← Esci
+              </button>
+            </>
+          )}
+        </main>
+      );
+    }
+
+    // TOMBOLA GAME
+    if (gameType === 'tombola') {
+      const tombolaState = gameState as any;
+      const extractedNumbers = tombolaState?.extractedNumbers || [];
+      const currentNumber = tombolaState?.currentNumber;
+      const isGameOver = tombolaState?.phase === 'gameOver';
+      const winner = tombolaState?.winner;
+      const myPlayer = tombolaState?.players?.find((p: any) => p.id === playerId);
+      const myCartella = myPlayer?.cartella || [];
+      const myMatched = myPlayer?.matchedNumbers || [];
+
+      return (
+        <main className="min-h-screen bg-gradient-to-br from-red-900 via-green-800/20 to-red-900 flex flex-col items-center p-2 sm:p-4">
+          {notificationEl}
+          {opponentActionEl}
+          
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">🎱 Tombola</h1>
+          
+          <div className="bg-black/40 px-4 py-1 rounded-full mb-3">
+            <span className="text-red-300 font-mono text-lg">{roomCode}</span>
+          </div>
+
+          {isGameOver ? (
+            <div className="text-center">
+              <div className="text-6xl mb-4">🏆</div>
+              <h2 className="text-2xl font-bold text-white mb-4">
+                {winner === playerId ? 'HAI VINTO!' : winner === 'draw' ? 'Pareggio!' : `${tombolaState.players?.find((p: any) => p.id === winner)?.name} ha vinto!`}
+              </h2>
+              <button
+                onClick={() => { setView('home'); setGameState(null); setRoomCode(''); }}
+                className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold rounded-2xl"
+              >
+                🏠 Nuova Partita
+              </button>
+            </div>
+          ) : (
+            <>
+              {isMyTurn && (
+                <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-3 rounded-full text-white font-bold mb-4">
+                  🎯 È il tuo turno! Estrai un numero
+                </div>
+              )}
+
+              {currentNumber && (
+                <div className="bg-white rounded-full w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center mb-4 shadow-2xl">
+                  <span className="text-5xl sm:text-6xl font-bold text-red-600">{currentNumber}</span>
+                </div>
+              )}
+
+              {isMyTurn && (
+                <button
+                  onClick={() => {
+                    playDice();
+                    gameApi('drawTombolaNumber', { roomCode, playerId }).then((res) => {
+                      if (res.success) {
+                        setGameState(res.gameState);
+                        playDice();
+                      }
+                    });
+                  }}
+                  className="px-8 py-4 bg-gradient-to-r from-red-500 to-green-500 text-white font-bold rounded-2xl mb-4"
+                >
+                  🎲 Estrai Numero
+                </button>
+              )}
+
+              <div className="text-white mb-2">Numeri estratti: {extractedNumbers.length}/90</div>
+
+              <div className="flex flex-wrap gap-1 justify-center max-w-xs sm:max-w-md mb-4">
+                {extractedNumbers.slice(-15).map((n: number) => (
+                  <span key={n} className="w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                    {n}
+                  </span>
+                ))}
+              </div>
+
+              <div className="text-white text-sm mb-2">La tua cartella:</div>
+              <div className="bg-white rounded-lg p-2 sm:p-3 max-w-sm">
+                {myCartella.map((row: number[], rowIdx: number) => (
+                  <div key={rowIdx} className="flex justify-center gap-1 mb-1">
+                    {row.map((num: number | null, colIdx: number) => (
+                      <div
+                        key={colIdx}
+                        className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-sm font-bold rounded ${
+                          num === null ? 'bg-gray-200' : myMatched.includes(num) ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {num || ''}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => { setView('home'); setGameState(null); }}
+                className="mt-6 px-6 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20"
+              >
+                ← Esci
+              </button>
+            </>
+          )}
+        </main>
+      );
+    }
+
+    // TRIS GAME
+    if (gameType === 'tris') {
+      const trisState = gameState as any;
+      const board = trisState?.board || [];
+      const isGameOver = trisState?.phase === 'gameOver';
+      const winner = trisState?.winner;
+      const playerSymbol = trisState?.players?.findIndex((p: any) => p.id === playerId) === 0 ? 'X' : 'O';
+
+      return (
+        <main className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-800/20 to-blue-900 flex flex-col items-center p-2 sm:p-4">
+          {notificationEl}
+          {opponentActionEl}
+          
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">❌⭕ Tris</h1>
+          
+          <div className="bg-black/40 px-4 py-1 rounded-full mb-3">
+            <span className="text-blue-300 font-mono text-lg">{roomCode}</span>
+          </div>
+
+          {isGameOver ? (
+            <div className="text-center">
+              <div className="text-6xl mb-4">🏆</div>
+              <h2 className="text-2xl font-bold text-white mb-4">
+                {winner === playerId ? 'HAI VINTO!' : winner === 'draw' ? 'Pareggio!' : `${trisState.players?.find((p: any) => p.id === winner)?.name} ha vinto!`}
+              </h2>
+              <button
+                onClick={() => { setView('home'); setGameState(null); setRoomCode(''); }}
+                className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold rounded-2xl"
+              >
+                🏠 Nuova Partita
+              </button>
+            </div>
+          ) : (
+            <>
+              {isMyTurn && (
+                <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-3 rounded-full text-white font-bold mb-4">
+                  🎯 È il tuo turno! Tocca a te (sei {playerSymbol})
+                </div>
+              )}
+
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
+                {board.map((row: (string | null)[], rowIdx: number) =>
+                  row.map((cell: string | null, colIdx: number) => (
+                    <button
+                      key={`${rowIdx}-${colIdx}`}
+                      onClick={() => {
+                        if (isMyTurn && cell === null) {
+                          playCard();
+                          gameApi('playTris', { roomCode, playerId, row: rowIdx, col: colIdx }).then((res) => {
+                            if (res.success) {
+                              setGameState(res.gameState);
+                              playFlip();
+                            }
+                          });
+                        }
+                      }}
+                      disabled={!isMyTurn || cell !== null}
+                      className={`w-20 h-20 sm:w-24 sm:h-24 rounded-xl text-5xl sm:text-6xl font-bold flex items-center justify-center transition-all ${
+                        cell === null 
+                          ? 'bg-white/20 hover:bg-white/30' 
+                          : cell === 'X' 
+                            ? 'bg-blue-500 text-white' 
+                            : 'bg-red-500 text-white'
+                      }`}
+                    >
+                      {cell || ''}
+                    </button>
+                  ))
+                )}
+              </div>
+
+              <button
+                onClick={() => { setView('home'); setGameState(null); }}
+                className="mt-6 px-6 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20"
+              >
+                ← Esci
+              </button>
+            </>
+          )}
         </main>
       );
     }

@@ -19,6 +19,29 @@ function shuffle(array: any[]) {
 // AI Names
 const AI_NAMES = ['Bot Mario', 'Bot Luigi', 'Bot Peach', 'Bot Toad', 'Bot Yoshi'];
 
+// Tombola cartella generator (3 rows of 9 numbers each)
+function generateTombolaCartella() {
+  const numbers = Array.from({ length: 90 }, (_, i) => i + 1);
+  const shuffled = shuffle(numbers);
+  const cartella: number[][] = [];
+  for (let row = 0; row < 3; row++) {
+    const rowNumbers = shuffled.slice(row * 5, row * 5 + 5).sort((a, b) => a - b);
+    const rowWithBlanks = [];
+    let blanksNeeded = 4;
+    let numIdx = 0;
+    for (let col = 0; col < 9; col++) {
+      if (col === 0 || col === 4 || col === 8 || (blanksNeeded > 0 && Math.random() < 0.3 && numIdx < 5)) {
+        rowWithBlanks.push(null);
+        blanksNeeded--;
+      } else {
+        rowWithBlanks.push(rowNumbers[numIdx++] || null);
+      }
+    }
+    cartella.push(rowWithBlanks);
+  }
+  return cartella;
+}
+
 // Italian deck for Mercante in Fiera (40 cards)
 function createMercanteDeck() {
   const suits = [
@@ -1609,6 +1632,48 @@ export async function POST(request: NextRequest) {
           });
         }
 
+        // Memory game initialization
+        if (room.gameType === 'memory') {
+          const emojis = ['🍎', '🍊', '🍋', '🍇', '🍓', '🍒', '🥝', '🍑', '🥑', '🍍', '🥭', '🍌'];
+          const selected = shuffle(emojis).slice(0, 8);
+          const cards = shuffle([...selected, ...selected]).map((emoji, i) => ({
+            id: `card-${i}`,
+            emoji,
+            isFlipped: false,
+            isMatched: false,
+          }));
+          room.gameState.cards = cards;
+          room.gameState.phase = 'playing';
+          room.gameState.currentTurn = room.players[0].id;
+          room.gameState.flippedCards = [];
+          room.gameState.moves = 0;
+          room.gameState.scores = {};
+          room.players.forEach((p: any) => {
+            room.gameState.scores[p.id] = 0;
+          });
+        }
+
+        // Tombola game initialization
+        if (room.gameType === 'tombola') {
+          const numbers = Array.from({ length: 90 }, (_, i) => i + 1);
+          room.gameState.allNumbers = shuffle(numbers);
+          room.gameState.extractedNumbers = [];
+          room.gameState.currentNumber = null;
+          room.gameState.phase = 'playing';
+          room.gameState.players.forEach((p: any) => {
+            p.cartella = generateTombolaCartella();
+            p.matchedNumbers = [];
+          });
+        }
+
+        // Tris game initialization
+        if (room.gameType === 'tris') {
+          room.gameState.board = Array(3).fill(null).map(() => Array(3).fill(null));
+          room.gameState.phase = 'playing';
+          room.gameState.currentTurn = room.players[0].id;
+          room.gameState.winner = null;
+        }
+
         room.lastUpdate = Date.now();
         
         if (room.vsCpu) {
@@ -2865,6 +2930,331 @@ export async function POST(request: NextRequest) {
           processCpuTurns(room);
         }
         
+        return NextResponse.json({ success: true, gameState: state });
+      }
+
+      // =====================
+      // MEMORY ACTIONS
+      // =====================
+      case 'playMemory': {
+        const room = rooms.get(roomCode?.toUpperCase());
+        if (!room || room.gameType !== 'memory') {
+          return NextResponse.json({ success: false, error: 'Partita Memory non trovata' });
+        }
+
+        const state = room.gameState;
+        const cardId = body.cardId as string;
+
+        if (state.phase === 'gameOver') {
+          return NextResponse.json({ success: false, error: 'Partita finita' });
+        }
+
+        if (state.currentTurn !== playerId) {
+          return NextResponse.json({ success: false, error: 'Non è il tuo turno' });
+        }
+
+        const card = state.cards.find((c: any) => c.id === cardId);
+        if (!card || card.isFlipped || card.isMatched) {
+          return NextResponse.json({ success: false, error: 'Carta non valida' });
+        }
+
+        // Flip the card
+        card.isFlipped = true;
+        state.flippedCards.push(card);
+
+        if (state.flippedCards.length === 2) {
+          state.moves++;
+
+          const [first, second] = state.flippedCards;
+
+          if (first.emoji === second.emoji) {
+            // Match found!
+            first.isMatched = true;
+            second.isMatched = true;
+            state.scores[playerId] = (state.scores[playerId] || 0) + 1;
+
+            state.lastAction = {
+              playerId,
+              message: `${state.players.find((p: any) => p.id === playerId)?.name} trova una coppia!`
+            };
+
+            // Check if all cards are matched
+            const allMatched = state.cards.every((c: any) => c.isMatched);
+            if (allMatched) {
+              state.phase = 'gameOver';
+              // Find winner (most pairs)
+              let maxScore = -1;
+              let winners: string[] = [];
+              for (const [pid, score] of Object.entries(state.scores)) {
+                if ((score as number) > maxScore) {
+                  maxScore = score as number;
+                  winners = [pid];
+                } else if ((score as number) === maxScore) {
+                  winners.push(pid);
+                }
+              }
+              state.winner = winners.length === 1 ? winners[0] : 'draw';
+            }
+
+            state.flippedCards = [];
+          } else {
+            // No match - will flip back after delay
+            state.lastAction = {
+              playerId,
+              message: `${state.players.find((p: any) => p.id === playerId)?.name} non trova una coppia`
+            };
+            // Keep flipped for a moment, then flip back
+          }
+        }
+
+        // Switch turn if no match or 2 cards flipped
+        if (state.flippedCards.length === 2) {
+          // If matched, same player continues; if not, next player
+          if (!state.flippedCards[0].isMatched) {
+            const currentIdx = state.players.findIndex((p: any) => p.id === playerId);
+            const nextIdx = (currentIdx + 1) % state.players.length;
+            state.currentTurn = state.players[nextIdx].id;
+          }
+        }
+
+        room.lastUpdate = Date.now();
+
+        return NextResponse.json({ success: true, gameState: state });
+      }
+
+      case 'flipBackMemory': {
+        // Flip back unmatched cards after a delay
+        const room = rooms.get(roomCode?.toUpperCase());
+        if (!room || room.gameType !== 'memory') {
+          return NextResponse.json({ success: false });
+        }
+
+        const state = room.gameState;
+        for (const card of state.flippedCards) {
+          if (!card.isMatched) {
+            card.isFlipped = false;
+          }
+        }
+        state.flippedCards = [];
+
+        room.lastUpdate = Date.now();
+
+        return NextResponse.json({ success: true, gameState: state });
+      }
+
+      // =====================
+      // TOMBOLA ACTIONS
+      // =====================
+      case 'drawTombolaNumber': {
+        const room = rooms.get(roomCode?.toUpperCase());
+        if (!room || room.gameType !== 'tombola') {
+          return NextResponse.json({ success: false, error: 'Partita Tombola non trovata' });
+        }
+
+        const state = room.gameState;
+
+        if (state.phase === 'gameOver') {
+          return NextResponse.json({ success: false, error: 'Partita finita' });
+        }
+
+        if (state.allNumbers.length === 0) {
+          return NextResponse.json({ success: false, error: 'Tutti i numeri sono stati estratti' });
+        }
+
+        // Draw next number
+        const drawnNumber = state.allNumbers.pop()!;
+        state.extractedNumbers.push(drawnNumber);
+        state.currentNumber = drawnNumber;
+
+        // Check for winners
+        const checkTombola = (cartella: number[][], matched: number[]): boolean => {
+          // Full cartella
+          const flatCartella = cartella.flat().filter(n => n !== null);
+          return flatCartella.every(n => matched.includes(n));
+        };
+
+        const checkAmbo = (cartella: number[][], matched: number[]): boolean => {
+          const numbers = cartella.flat().filter(n => n !== null) as number[];
+          const matchedInCartella = numbers.filter(n => matched.includes(n));
+          return matchedInCartella.length >= 2;
+        };
+
+        const checkTerna = (cartella: number[][], matched: number[]): boolean => {
+          const numbers = cartella.flat().filter(n => n !== null) as number[];
+          const matchedInCartella = numbers.filter(n => matched.includes(n));
+          return matchedInCartella.length >= 3;
+        };
+
+        const checkQuaterna = (cartella: number[][], matched: number[]): boolean => {
+          const numbers = cartella.flat().filter(n => n !== null) as number[];
+          const matchedInCartella = numbers.filter(n => matched.includes(n));
+          return matchedInCartella.length >= 4;
+        };
+
+        const checkCinquina = (cartella: number[][], matched: number[]): boolean => {
+          // Check each row
+          for (const row of cartella) {
+            const rowNumbers = row.filter(n => n !== null) as number[];
+            if (rowNumbers.every(n => matched.includes(n))) return true;
+          }
+          return false;
+        };
+
+        // Update player matched numbers
+        for (const player of state.players) {
+          if (player.cartella) {
+            const allNumbers = player.cartella.flat().filter(n => n !== null) as number[];
+            if (allNumbers.includes(drawnNumber)) {
+              player.matchedNumbers.push(drawnNumber);
+              player.matchedNumbers = [...new Set(player.matchedNumbers)];
+            }
+          }
+        }
+
+        // Check for winners
+        const winners: string[] = [];
+        for (const player of state.players) {
+          if (player.cartella && checkTombola(player.cartella, player.matchedNumbers)) {
+            if (!winners.includes(player.id)) winners.push(player.id);
+          }
+        }
+
+        if (winners.length > 0) {
+          state.phase = 'gameOver';
+          state.winner = winners.length === 1 ? winners[0] : 'draw';
+          state.lastAction = {
+            playerId: 'system',
+            message: winners.length === 1 
+              ? `TOMBOLA! ${state.players.find(p => p.id === winners[0])?.name} vince!`
+              : 'TOMBOLA! Pareggio!'
+          };
+        } else {
+          // Check for other wins
+          const amboWinners: string[] = [];
+          const ternaWinners: string[] = [];
+          const quaternaWinners: string[] = [];
+          const cinquinaWinners: string[] = [];
+
+          for (const player of state.players) {
+            if (player.cartella) {
+              if (!player.ambo && checkAmbo(player.cartella, player.matchedNumbers)) {
+                player.ambo = true;
+                amboWinners.push(player.id);
+              }
+              if (!player.terna && checkTerna(player.cartella, player.matchedNumbers)) {
+                player.terna = true;
+                ternaWinners.push(player.id);
+              }
+              if (!player.quaterna && checkQuaterna(player.cartella, player.matchedNumbers)) {
+                player.quaterna = true;
+                quaternaWinners.push(player.id);
+              }
+              if (!player.cinquina && checkCinquina(player.cartella, player.matchedNumbers)) {
+                player.cinquina = true;
+                cinquinaWinners.push(player.id);
+              }
+            }
+          }
+
+          let msg = `Numero estratto: ${drawnNumber}`;
+          if (amboWinners.length > 0) msg += ' - Ambo!';
+          if (ternaWinners.length > 0) msg += ' - Terna!';
+          if (quaternaWinners.length > 0) msg += ' - Quaterna!';
+          if (cinquinaWinners.length > 0) msg += ' - Cinquina!';
+
+          state.lastAction = {
+            playerId: 'system',
+            message: msg
+          };
+        }
+
+        room.lastUpdate = Date.now();
+
+        return NextResponse.json({ success: true, gameState: state });
+      }
+
+      // =====================
+      // TRIS ACTIONS
+      // =====================
+      case 'playTris': {
+        const room = rooms.get(roomCode?.toUpperCase());
+        if (!room || room.gameType !== 'tris') {
+          return NextResponse.json({ success: false, error: 'Partita Tris non trovata' });
+        }
+
+        const state = room.gameState;
+        const row = body.row as number;
+        const col = body.col as number;
+
+        if (state.phase === 'gameOver') {
+          return NextResponse.json({ success: false, error: 'Partita finita' });
+        }
+
+        if (state.currentTurn !== playerId) {
+          return NextResponse.json({ success: false, error: 'Non è il tuo turno' });
+        }
+
+        if (row < 0 || row > 2 || col < 0 || col > 2) {
+          return NextResponse.json({ success: false, error: 'Posizione non valida' });
+        }
+
+        if (state.board[row][col] !== null) {
+          return NextResponse.json({ success: false, error: 'Casella già occupata' });
+        }
+
+        const playerIndex = state.players.findIndex((p: any) => p.id === playerId);
+        const playerSymbol = playerIndex === 0 ? 'X' : 'O';
+
+        state.board[row][col] = playerSymbol;
+
+        // Check for win
+        const checkWin = (symbol: string): boolean => {
+          const b = state.board;
+          // Rows
+          for (let r = 0; r < 3; r++) {
+            if (b[r][0] === symbol && b[r][1] === symbol && b[r][2] === symbol) return true;
+          }
+          // Columns
+          for (let c = 0; c < 3; c++) {
+            if (b[0][c] === symbol && b[1][c] === symbol && b[2][c] === symbol) return true;
+          }
+          // Diagonals
+          if (b[0][0] === symbol && b[1][1] === symbol && b[2][2] === symbol) return true;
+          if (b[0][2] === symbol && b[1][1] === symbol && b[2][0] === symbol) return true;
+          return false;
+        };
+
+        if (checkWin(playerSymbol)) {
+          state.phase = 'gameOver';
+          state.winner = playerId;
+          state.lastAction = {
+            playerId,
+            message: `${state.players[playerIndex].name} vince!`
+          };
+        } else {
+          // Check for draw
+          const isFull = state.board.every((row: (string | null)[]) => row.every((cell: string | null) => cell !== null));
+          if (isFull) {
+            state.phase = 'gameOver';
+            state.winner = 'draw';
+            state.lastAction = {
+              playerId: 'system',
+              message: 'Pareggio!'
+            };
+          } else {
+            // Next turn
+            const currentIdx = state.players.findIndex((p: any) => p.id === playerId);
+            const nextIdx = (currentIdx + 1) % state.players.length;
+            state.currentTurn = state.players[nextIdx].id;
+            state.lastAction = {
+              playerId,
+              message: `${state.players[playerIndex].name} gioca`
+            };
+          }
+        }
+
+        room.lastUpdate = Date.now();
+
         return NextResponse.json({ success: true, gameState: state });
       }
 

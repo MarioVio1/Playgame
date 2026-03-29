@@ -1105,21 +1105,33 @@ export default function Home() {
       const myColor = myPlayerIndex === 0 ? 'red' : 'yellow';
       
       return (
-        <main className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900/20 to-gray-900 flex flex-col items-center justify-center p-4">
+        <main className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900/30 to-slate-900 flex flex-col items-center justify-center p-4">
           {notificationEl}
           {opponentActionEl}
           
-          <h1 className="text-3xl font-bold text-white mb-4">🔴 Forza 4</h1>
+          {/* Room Code */}
+          <div className="absolute top-4 bg-black/40 px-4 py-1 rounded-full">
+            <span className="text-cyan-300 font-mono text-lg">{roomCode}</span>
+          </div>
+          
+          <h1 className="text-4xl font-black text-white mb-2">FORZA 4</h1>
+          <p className="text-gray-400 mb-6">🔴 Connetterai 4 in fila!</p>
           
           {isGameOver ? (
             <div className="text-center">
-              <div className="text-6xl mb-4">{winner === playerId ? '🎉' : '😢'}</div>
-              <h2 className="text-3xl font-bold text-white mb-4">
+              <motion.div 
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="text-8xl mb-6"
+              >
+                {winner === playerId ? '🎉' : '😢'}
+              </motion.div>
+              <h2 className="text-4xl font-bold text-white mb-6">
                 {winner === playerId ? 'HAI VINTO!' : 'HAI PERSO!'}
               </h2>
               <button
-                onClick={() => { setView('home'); setGameState(null); }}
-                className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold rounded-2xl"
+                onClick={() => { setView('home'); setGameState(null); setForza4Board(Array(6).fill(null).map(() => Array(7).fill(0))); }}
+                className="px-10 py-5 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold rounded-2xl text-xl shadow-xl shadow-green-500/30"
               >
                 🏠 Nuova Partita
               </button>
@@ -1127,55 +1139,84 @@ export default function Home() {
           ) : (
             <>
               {isMyTurn && (
-                <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-3 rounded-full text-white font-bold mb-4">
-                  🎯 È il tuo turno!
-                </div>
+                <motion.div 
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="bg-gradient-to-r from-green-500 to-emerald-500 px-8 py-4 rounded-full text-white font-bold text-xl mb-6 shadow-xl shadow-green-500/30"
+                >
+                  🎯 Tocca a te!
+                </motion.div>
               )}
               
-              {/* Board */}
-              <div className="bg-blue-600 p-4 rounded-2xl shadow-2xl">
-                <div className="grid grid-cols-7 gap-2">
+              {/* Board - Premium Style */}
+              <div className="bg-gradient-to-b from-blue-600 to-blue-800 p-6 rounded-3xl shadow-2xl border-4 border-blue-500/30">
+                {/* Column Buttons */}
+                <div className="grid grid-cols-7 gap-2 mb-2">
                   {board[0].map((_, colIndex) => (
-                    <button
-                      key={colIndex}
+                    <motion.button
+                      key={`col-${colIndex}`}
+                      whileHover={isMyTurn ? { scale: 1.1 } : {}}
+                      whileTap={isMyTurn ? { scale: 0.9 } : {}}
                       onClick={() => isMyTurn && playForza4(colIndex)}
                       disabled={!isMyTurn}
-                      className={`w-12 h-12 md:w-16 md:h-16 rounded-xl transition-all ${
-                        isMyTurn ? 'hover:bg-blue-400 cursor-pointer' : 'cursor-default'
+                      className={`w-14 h-14 md:w-16 md:h-16 rounded-xl transition-all flex items-center justify-center ${
+                        isMyTurn ? 'hover:bg-blue-400/50 cursor-pointer' : 'cursor-default'
                       }`}
                     >
-                      <span className="text-2xl">⬇️</span>
-                    </button>
+                      <span className="text-3xl opacity-50">⬆️</span>
+                    </motion.button>
                   ))}
                 </div>
-                <div className="grid grid-cols-7 gap-2 mt-2">
+                
+                {/* Game Grid */}
+                <div className="grid grid-cols-7 gap-3">
                   {board.map((row, rowIndex) =>
                     row.map((cell, colIndex) => (
-                      <div
+                      <motion.div
                         key={`${rowIndex}-${colIndex}`}
-                        className="w-12 h-12 md:w-16 md:h-16 bg-blue-800 rounded-xl flex items-center justify-center"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="w-14 h-14 md:w-16 md:h-16 bg-blue-900/80 rounded-2xl flex items-center justify-center shadow-inner"
                       >
-                        {cell === 1 && <div className="w-10 h-10 md:w-14 md:h-14 bg-gradient-to-br from-red-400 to-red-600 rounded-full shadow-lg"></div>}
-                        {cell === 2 && <div className="w-10 h-10 md:w-14 md:h-14 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-full shadow-lg"></div>}
-                      </div>
+                        {cell === 1 && (
+                          <motion.div 
+                            initial={{ scale: 0.5, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="w-11 h-11 md:w-14 md:h-14 bg-gradient-to-br from-red-400 to-red-600 rounded-full shadow-lg border-2 border-red-300/30"
+                          />
+                        )}
+                        {cell === 2 && (
+                          <motion.div 
+                            initial={{ scale: 0.5, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="w-11 h-11 md:w-14 md:h-14 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-full shadow-lg border-2 border-yellow-200/30"
+                          />
+                        )}
+                      </motion.div>
                     ))
                   )}
                 </div>
               </div>
               
               {/* Players */}
-              <div className="flex gap-6 mt-6">
+              <div className="flex gap-4 mt-8">
                 {(gameState.players as any[])?.map((p: any, i: number) => (
-                  <div
+                  <motion.div
                     key={p.id}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl ${
-                      gameState.currentTurn === p.id ? 'bg-white/20 ring-2 ring-white' : 'bg-black/20'
+                    whileHover={{ scale: 1.05 }}
+                    className={`flex items-center gap-3 px-5 py-3 rounded-2xl ${
+                      gameState.currentTurn === p.id 
+                        ? 'bg-white/20 ring-2 ring-cyan-400 shadow-lg shadow-cyan-400/20' 
+                        : 'bg-black/30'
                     }`}
                   >
-                    <div className={`w-6 h-6 rounded-full ${i === 0 ? 'bg-red-500' : 'bg-yellow-400'}`}></div>
-                    <span className="text-white font-medium">{p.name}</span>
-                    {p.isCpu && <span>🤖</span>}
-                  </div>
+                    <div className={`w-8 h-8 rounded-full ${i === 0 ? 'bg-gradient-to-br from-red-400 to-red-600' : 'bg-gradient-to-br from-yellow-300 to-yellow-500'}`}></div>
+                    <div>
+                      <div className="text-white font-bold">{p.name}</div>
+                      <div className="text-xs text-gray-400">{i === 0 ? '🔴' : '🟡'}</div>
+                    </div>
+                    {p.isCpu && <span className="text-lg">🤖</span>}
+                  </motion.div>
                 ))}
               </div>
             </>

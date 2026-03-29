@@ -255,6 +255,33 @@ export default function Home() {
     setView('home');
   }, []);
 
+  // Poll for room updates when in lobby
+  useEffect(() => {
+    if (view !== 'lobby' || !roomCode) return;
+    
+    const pollRoom = async () => {
+      try {
+        const res = await gameApi('getRoomStatus', { roomCode });
+        if (res.success) {
+          setPlayers(res.players);
+          // Auto-start game if it was started by host
+          if (res.isGameStarted && res.gameState) {
+            setGameState(res.gameState);
+            setView('game');
+            showNotification('🎮 Partita iniziata!', 'success');
+          }
+        }
+      } catch (e) {
+        console.error('Poll error:', e);
+      }
+    };
+
+    const interval = setInterval(pollRoom, 2000);
+    pollRoom();
+
+    return () => clearInterval(interval);
+  }, [view, roomCode, showNotification]);
+
   const showNotification = useCallback((message: string, type: 'info' | 'success' | 'error' = 'info') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3000);
@@ -1004,6 +1031,14 @@ export default function Home() {
         players={players}
         gameState={gameState}
         onExit={disableTVMode}
+        onGameStart={(gs) => {
+          setGameState(gs);
+          setView('game');
+          showNotification('🎮 Partita iniziata!', 'success');
+        }}
+        onPlayersUpdate={(updatedPlayers) => {
+          setPlayers(updatedPlayers);
+        }}
       />
     );
   }

@@ -1380,6 +1380,20 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, playerId: pId, gameType: room.gameType, players: room.players });
       }
 
+      case 'getRoomStatus': {
+        const room = rooms.get(roomCode?.toUpperCase());
+        if (!room) return NextResponse.json({ success: false, error: 'Stanza non trovata!' });
+        room.lastUpdate = Date.now();
+        return NextResponse.json({ 
+          success: true, 
+          players: room.players, 
+          gameType: room.gameType,
+          gameState: room.gameState,
+          isGameStarted: !!room.gameState,
+          lastUpdate: room.lastUpdate
+        });
+      }
+
       case 'startGame': {
         const room = rooms.get(roomCode?.toUpperCase());
         if (!room) return NextResponse.json({ success: false, error: 'Stanza non trovata!' });

@@ -10,11 +10,15 @@ interface TVModeProps {
   players: { id: string; name: string; isHost: boolean }[];
   gameState?: any;
   onExit: () => void;
+  onGameStart?: (gameState: any) => void;
+  onPlayersUpdate?: (players: { id: string; name: string; isHost: boolean }[]) => void;
 }
 
-export function TVMode({ roomCode, gameType, players, gameState, onExit }: TVModeProps) {
+export function TVMode({ roomCode, gameType, players: initialPlayers, gameState, onExit, onGameStart, onPlayersUpdate }: TVModeProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showJoinHint, setShowJoinHint] = useState(true);
+  const [players, setPlayers] = useState(initialPlayers);
+  const [currentGameState, setCurrentGameState] = useState(gameState);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -25,6 +29,38 @@ export function TVMode({ roomCode, gameType, players, gameState, onExit }: TVMod
     const timer = setTimeout(() => setShowJoinHint(false), 10000);
     return () => clearTimeout(timer);
   }, []);
+
+  // Poll for room updates (players joining, game starting)
+  useEffect(() => {
+    const pollRoomStatus = async () => {
+      try {
+        const res = await fetch('/api/game', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'getRoomStatus', roomCode })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setPlayers(data.players);
+          onPlayersUpdate?.(data.players);
+          
+          // Check if game started
+          if (data.isGameStarted && !currentGameState) {
+            setCurrentGameState(data.gameState);
+            onGameStart?.(data.gameState);
+          }
+        }
+      } catch (e) {
+        console.error('Poll error:', e);
+      }
+    };
+
+    // Poll every 2 seconds
+    const interval = setInterval(pollRoomStatus, 2000);
+    pollRoomStatus(); // Initial fetch
+
+    return () => clearInterval(interval);
+  }, [roomCode, currentGameState, onGameStart, onPlayersUpdate]);
 
   const joinUrl = typeof window !== 'undefined' 
     ? `${window.location.origin}?join=${roomCode}`

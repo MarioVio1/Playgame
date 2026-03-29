@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
 
-let socket: Socket | null = null;
+let socket: any = null;
 
 export function useSocket() {
   const [isConnected, setIsConnected] = useState(false);
@@ -12,44 +11,53 @@ export function useSocket() {
   const [gameState, setGameState] = useState<any>(null);
   const roomRef = useRef<string>('');
   const playerIdRef = useRef<string>('');
+  const isInitialized = useRef(false);
 
   useEffect(() => {
-    if (!socket) {
-      socket = io({
-        path: '/socket.io/',
-        transports: ['websocket', 'polling'],
-      });
-    }
+    if (typeof window === 'undefined' || isInitialized.current) return;
+    isInitialized.current = true;
 
-    socket.on('connect', () => {
-      setIsConnected(true);
-      console.log('Socket connected');
-    });
+    import('socket.io-client').then(({ io }) => {
+      if (!socket) {
+        try {
+          socket = io({
+            path: '/socket.io/',
+            transports: ['websocket', 'polling'],
+            reconnection: false,
+          });
 
-    socket.on('disconnect', () => {
-      setIsConnected(false);
-      console.log('Socket disconnected');
-    });
+          socket.on('connect', () => {
+            setIsConnected(true);
+          });
 
-    socket.on('player-joined', (data) => {
-      setPlayers(data.players);
-    });
+          socket.on('disconnect', () => {
+            setIsConnected(false);
+          });
 
-    socket.on('player-left', (data) => {
-      setPlayers(prev => prev.filter(p => p.id !== data.playerId));
-    });
+          socket.on('player-joined', (data: any) => {
+            setPlayers(data.players);
+          });
 
-    socket.on('room-state', (data) => {
-      setPlayers(data.players);
-    });
+          socket.on('player-left', (data: any) => {
+            setPlayers((prev: any[]) => prev.filter((p: any) => p.id !== data.playerId));
+          });
 
-    socket.on('game-started', (data) => {
-      setGameStarted(true);
-      setGameState(data.gameState);
-    });
+          socket.on('room-state', (data: any) => {
+            setPlayers(data.players);
+          });
 
-    socket.on('game-updated', (data) => {
-      setGameState(data.gameState);
+          socket.on('game-started', (data: any) => {
+            setGameStarted(true);
+            setGameState(data.gameState);
+          });
+
+          socket.on('game-updated', (data: any) => {
+            setGameState(data.gameState);
+          });
+        } catch (e) {
+          console.log('Socket.io not available');
+        }
+      }
     });
 
     return () => {

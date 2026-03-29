@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3000",
+    "dev": "node server.js",
     "build": "next build",
-    "start": "NODE_ENV=production node .next/standalone/server.js",
+    "start": "NODE_ENV=production node server.js",
     "lint": "eslint .",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",

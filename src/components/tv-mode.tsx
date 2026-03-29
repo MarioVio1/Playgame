@@ -3,22 +3,34 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QrCode, Smartphone, Tv, Users } from 'lucide-react';
+import { useSocket } from '@/hooks/useSocket';
 
 interface TVModeProps {
   roomCode: string;
   gameType: string;
   players: { id: string; name: string; isHost: boolean }[];
   gameState?: any;
+  playerId?: string;
+  playerName?: string;
   onExit: () => void;
   onGameStart?: (gameState: any) => void;
   onPlayersUpdate?: (players: { id: string; name: string; isHost: boolean }[]) => void;
 }
 
-export function TVMode({ roomCode, gameType, players: initialPlayers, gameState, onExit, onGameStart, onPlayersUpdate }: TVModeProps) {
+export function TVMode({ roomCode, gameType, players: initialPlayers, gameState, playerId, playerName, onExit, onGameStart, onPlayersUpdate }: TVModeProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showJoinHint, setShowJoinHint] = useState(true);
   const [players, setPlayers] = useState(initialPlayers);
   const [currentGameState, setCurrentGameState] = useState(gameState);
+
+  const { 
+    isConnected,
+    players: socketPlayers,
+    gameStarted: socketGameStarted,
+    gameState: socketGameState,
+    joinRoom: socketJoinRoom,
+    resetGameStarted
+  } = useSocket();
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -30,37 +42,33 @@ export function TVMode({ roomCode, gameType, players: initialPlayers, gameState,
     return () => clearTimeout(timer);
   }, []);
 
-  // Poll for room updates (players joining, game starting)
+  // Join socket room for real-time updates
   useEffect(() => {
-    const pollRoomStatus = async () => {
-      try {
-        const res = await fetch('/api/game', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'getRoomStatus', roomCode })
-        });
-        const data = await res.json();
-        if (data.success) {
-          setPlayers(data.players);
-          onPlayersUpdate?.(data.players);
-          
-          // Check if game started
-          if (data.isGameStarted && !currentGameState) {
-            setCurrentGameState(data.gameState);
-            onGameStart?.(data.gameState);
-          }
-        }
-      } catch (e) {
-        console.error('Poll error:', e);
-      }
-    };
+    if (roomCode && playerId && playerName) {
+      socketJoinRoom(roomCode, playerId, playerName);
+    }
+  }, [roomCode, playerId, playerName, socketJoinRoom]);
 
-    // Poll every 2 seconds
-    const interval = setInterval(pollRoomStatus, 2000);
-    pollRoomStatus(); // Initial fetch
+  // Handle socket player updates
+  useEffect(() => {
+    if (socketPlayers.length > 0) {
+      const updatedPlayers = socketPlayers.map((p: any) => ({
+        ...p,
+        isHost: initialPlayers.find((ip: any) => ip.id === p.id)?.isHost || false
+      }));
+      setPlayers(updatedPlayers);
+      onPlayersUpdate?.(updatedPlayers);
+    }
+  }, [socketPlayers, initialPlayers, onPlayersUpdate]);
 
-    return () => clearInterval(interval);
-  }, [roomCode, currentGameState, onGameStart, onPlayersUpdate]);
+  // Handle game start via socket
+  useEffect(() => {
+    if (socketGameStarted && socketGameState) {
+      setCurrentGameState(socketGameState);
+      onGameStart?.(socketGameState);
+      resetGameStarted();
+    }
+  }, [socketGameStarted, socketGameState, onGameStart, resetGameStarted]);
 
   const joinUrl = typeof window !== 'undefined' 
     ? `${window.location.origin}?join=${roomCode}`

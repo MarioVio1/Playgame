@@ -7,6 +7,7 @@ import { TVMode } from '@/components/tv-mode';
 import { PhoneController } from '@/components/phone-controller';
 import { UNOCard, UNODeck, DiscardPile } from '@/components/uno-card';
 import { IndovinaChi } from '@/components/indovina-chi';
+import { useSocket } from '@/hooks/useSocket';
 
 // ============================================
 // TYPES
@@ -226,6 +227,35 @@ export default function Home() {
   const [isTVMode, setIsTVMode] = useState(false);
   const [isPhoneMode, setIsPhoneMode] = useState(false);
 
+  // Socket for real-time updates
+  const { 
+    isConnected, 
+    players: socketPlayers, 
+    gameStarted: socketGameStarted, 
+    gameState: socketGameState,
+    joinRoom: socketJoinRoom, 
+    leaveRoom: socketLeaveRoom,
+    notifyGameStart,
+    resetGameStarted
+  } = useSocket();
+
+  // Sync socket players with local state
+  useEffect(() => {
+    if (socketPlayers.length > 0 && view === 'lobby') {
+      setPlayers(socketPlayers);
+    }
+  }, [socketPlayers, view]);
+
+  // Handle game start via socket
+  useEffect(() => {
+    if (socketGameStarted && socketGameState && view === 'lobby') {
+      setGameState(socketGameState);
+      setView('game');
+      showNotification('🎮 Partita iniziata!', 'success');
+      resetGameStarted();
+    }
+  }, [socketGameStarted, socketGameState, view, resetGameStarted]);
+
   // Check for join parameter on load
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -401,12 +431,16 @@ export default function Home() {
     setIsHost(true);
     setPlayers(res.players);
     
+    // Join socket room for real-time updates
+    socketJoinRoom(res.roomCode, playerId, playerName);
+    
     // Auto-start for Gioco dell'Oca multiplayer
     if (game === 'giocodelloca') {
       const startRes = await gameApi('startGame', { roomCode: res.roomCode, playerId: res.playerId, gameType: game });
       setIsLoading(false);
       if (startRes.success) {
         setGameState(startRes.gameState);
+        notifyGameStart(res.roomCode, startRes.gameState, res.players);
         setView('game');
         showNotification('🎮 Partita iniziata!', 'success');
       } else {
@@ -428,6 +462,8 @@ export default function Home() {
     if (res.success) {
       setGameType(res.gameType);
       setPlayers(res.players);
+      // Join socket room for real-time updates
+      socketJoinRoom(roomCode, playerId, playerName);
       setView('lobby');
     } else {
       setError(res.error || 'Errore');
@@ -440,6 +476,8 @@ export default function Home() {
     setIsLoading(false);
     if (res.success) {
       setGameState(res.gameState);
+      // Notify other players via socket
+      notifyGameStart(roomCode, res.gameState, res.players || players);
       const me = res.gameState?.players?.find((p: Player) => p.id === playerId);
       if (me?.hand) setMyCards(me.hand);
       if (res.gameState?.board) setForza4Board(res.gameState.board as number[][]);
@@ -1030,6 +1068,8 @@ export default function Home() {
         gameType={gameType}
         players={players}
         gameState={gameState}
+        playerId={playerId}
+        playerName={playerName}
         onExit={disableTVMode}
         onGameStart={(gs) => {
           setGameState(gs);

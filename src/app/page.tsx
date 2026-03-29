@@ -1526,7 +1526,8 @@ export default function Home() {
 
     // UNO GAME
     if (gameType === 'uno') {
-      const topCard = (gameState.discardPile as any[])?.slice(-1)[0];
+      const discardArray = gameState.discardPile as any[];
+      const topCard = discardArray && discardArray.length > 0 ? discardArray[discardArray.length - 1] : null;
       const currentColor = gameState.currentColor as string;
       const isGameOver = gameState.phase === 'gameOver';
       const winner = gameState.winner as string;
@@ -2103,8 +2104,8 @@ export default function Home() {
 
     // MEMORY GAME
     if (gameType === 'memory') {
-      const memoryState = gameState as any;
-      const cards = memoryState?.cards || [];
+      const memoryState = gameState || {};
+      const cards = memoryState.cards || [];
       const isGameOver = memoryState?.phase === 'gameOver';
       const winner = memoryState?.winner;
 
@@ -2186,8 +2187,8 @@ export default function Home() {
 
     // TOMBOLA GAME
     if (gameType === 'tombola') {
-      const tombolaState = gameState as any;
-      const extractedNumbers = tombolaState?.extractedNumbers || [];
+      const tombolaState = gameState || {};
+      const extractedNumbers = tombolaState.extractedNumbers || [];
       const currentNumber = tombolaState?.currentNumber;
       const isGameOver = tombolaState?.phase === 'gameOver';
       const winner = tombolaState?.winner;
@@ -2253,7 +2254,7 @@ export default function Home() {
               <div className="text-white mb-2">Numeri estratti: {extractedNumbers.length}/90</div>
 
               <div className="flex flex-wrap gap-1 justify-center max-w-xs sm:max-w-md mb-4">
-                {extractedNumbers.slice(-15).map((n: number) => (
+                {extractedNumbers.slice(Math.max(0, extractedNumbers.length - 15)).map((n: number) => (
                   <span key={n} className="w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
                     {n}
                   </span>
@@ -2292,7 +2293,7 @@ export default function Home() {
 
     // TRIS GAME
     if (gameType === 'tris') {
-      const trisState = gameState as any;
+      const trisState = gameState || {};
       const board = trisState?.board || [];
       const isGameOver = trisState?.phase === 'gameOver';
       const winner = trisState?.winner;

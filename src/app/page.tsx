@@ -113,6 +113,16 @@ const JOKING_PANELS = [
   { id: 8, text: 'Tutti scappano urlando', emoji: '😱' },
 ];
 
+// Player colors for games
+const PLAYER_COLORS = [
+  { bg: 'bg-red-500', border: 'border-red-600', name: 'Rosso' },
+  { bg: 'bg-blue-500', border: 'border-blue-600', name: 'Blu' },
+  { bg: 'bg-green-500', border: 'border-green-600', name: 'Verde' },
+  { bg: 'bg-yellow-500', border: 'border-yellow-600', name: 'Giallo' },
+  { bg: 'bg-purple-500', border: 'border-purple-600', name: 'Viola' },
+  { bg: 'bg-pink-500', border: 'border-pink-600', name: 'Rosa' },
+];
+
 // Games configuration
 const GAMES = [
   { id: 'forza4', name: 'Forza 4', emoji: '🔴', subtitle: 'Connetti 4 in fila!', players: '2', time: '5-15 min', gradient: 'from-yellow-500 to-red-500', hot: true },
@@ -353,15 +363,31 @@ export default function Home() {
     setIsLoading(true);
     setError('');
     const res = await gameApi('createRoom', { gameType: game, playerName, playerId, vsCpu, numBots });
-    setIsLoading(false);
-    if (res.success) {
-      setRoomCode(res.roomCode);
-      setGameType(game);
-      setIsHost(true);
-      setPlayers(res.players);
-      setView('lobby');
-    } else {
+    if (!res.success) {
+      setIsLoading(false);
       setError(res.error || 'Errore');
+      return;
+    }
+    
+    setRoomCode(res.roomCode);
+    setGameType(game);
+    setIsHost(true);
+    setPlayers(res.players);
+    
+    // Auto-start for Gioco dell'Oca multiplayer
+    if (game === 'giocodelloca') {
+      const startRes = await gameApi('startGame', { roomCode: res.roomCode, playerId: res.playerId, gameType: game });
+      setIsLoading(false);
+      if (startRes.success) {
+        setGameState(startRes.gameState);
+        setView('game');
+        showNotification('🎮 Partita iniziata!', 'success');
+      } else {
+        setError(startRes.error || 'Errore');
+      }
+    } else {
+      setIsLoading(false);
+      setView('lobby');
     }
   };
 
@@ -681,7 +707,11 @@ export default function Home() {
                   <motion.button
                     onClick={() => {
                       if ((game as any).isOca) {
-                        startOcaGame(playerName, vsCpu, numBots);
+                        if (roomCode && playerName) {
+                          createRoom(game.id);
+                        } else {
+                          startOcaGame(playerName, vsCpu, numBots);
+                        }
                       } else {
                         createRoom(game.id);
                       }
@@ -1523,6 +1553,114 @@ export default function Home() {
           )}
           
           <button onClick={() => { setView('home'); setGameState(null); }} className="mt-4 text-white/60">
+            ← Esci
+          </button>
+        </main>
+      );
+    }
+
+    // GIOCO DELL'OCA
+    if (gameType === 'giocodelloca') {
+      const ocaPlayers = gameState.players as any[];
+      const lastDice = gameState.lastDiceResult as number | null;
+      const lastAction = gameState.lastAction as { playerId: string; message: string } | null;
+      const winner = gameState.winner as string | null;
+      const isGameOver = gameState.phase === 'gameOver';
+
+      return (
+        <main className="min-h-screen bg-gradient-to-br from-amber-900 via-orange-800/20 to-amber-900 flex flex-col items-center p-2 sm:p-4">
+          {notificationEl}
+          {opponentActionEl}
+          
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">🪿 Gioco dell'Oca</h1>
+          
+          {/* Room Code */}
+          <div className="bg-black/40 px-4 py-1 rounded-full mb-3">
+            <span className="text-amber-300 font-mono text-lg">{roomCode}</span>
+          </div>
+
+          {isGameOver ? (
+            <div className="text-center">
+              <div className="text-6xl mb-4">🏆</div>
+              <h2 className="text-2xl font-bold text-white mb-4">
+                {winner === playerId ? 'HAI VINTO!' : `${ocaPlayers?.find(p => p.id === winner)?.name} ha vinto!`}
+              </h2>
+              <button
+                onClick={() => { setView('home'); setGameState(null); setRoomCode(''); }}
+                className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold rounded-2xl"
+              >
+                🏠 Nuova Partita
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Turn indicator */}
+              {isMyTurn && (
+                <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-3 rounded-full text-white font-bold mb-4">
+                  🎯 È il tuo turno! Tirare il dado
+                </div>
+              )}
+
+              {/* Last action */}
+              {lastAction && (
+                <div className="bg-black/50 px-4 py-2 rounded-xl mb-3 text-center max-w-md">
+                  <p className="text-white text-sm">{lastAction.message}</p>
+                </div>
+              )}
+
+              {/* Dice button */}
+              {isMyTurn && (
+                <button
+                  onClick={async () => {
+                    const res = await gameApi('rollDice', { roomCode, playerId });
+                    if (res.success) {
+                      setGameState(res.gameState);
+                      if (res.winner) {
+                        showNotification(res.winner === playerId ? '🎉 HAI VINTO!' : '😢 Hai perso!', res.winner === playerId ? 'success' : 'error');
+                      } else if (res.skipped) {
+                        showNotification('⏭️ Salti il turno!', 'info');
+                      }
+                    } else {
+                      showNotification(res.error || 'Errore', 'error');
+                    }
+                  }}
+                  className="w-24 h-24 bg-gradient-to-br from-red-500 to-orange-600 rounded-2xl text-white font-bold text-4xl shadow-lg hover:scale-105 active:scale-95 transition-transform mb-4"
+                >
+                  🎲
+                </button>
+              )}
+
+              {/* Players positions */}
+              <div className="flex flex-wrap justify-center gap-2 mb-4">
+                {ocaPlayers?.map((p, idx) => (
+                  <div
+                    key={p.id}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl ${
+                      gameState.currentTurn === p.id ? 'bg-white/30 ring-2 ring-amber-400' : 'bg-black/30'
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-full ${PLAYER_COLORS[idx % PLAYER_COLORS.length].bg} flex items-center justify-center text-white font-bold text-sm`}>
+                      {p.name[0]}
+                    </div>
+                    <div>
+                      <div className="text-white text-sm font-bold">{p.name}</div>
+                      <div className="text-amber-300 text-xs">Casella {p.position}</div>
+                    </div>
+                    {p.isCpu && <span className="text-xs bg-blue-500/50 px-1 rounded text-white">CPU</span>}
+                  </div>
+                ))}
+              </div>
+
+              {/* Board preview (simplified) */}
+              <div className="bg-black/30 rounded-2xl p-3 max-w-xs">
+                <div className="text-center text-gray-400 text-sm">
+                  🎯 Obiettivo: Casella 63 🏆
+                </div>
+              </div>
+            </>
+          )}
+          
+          <button onClick={() => { setView('home'); setGameState(null); setRoomCode(''); }} className="mt-4 text-white/60">
             ← Esci
           </button>
         </main>

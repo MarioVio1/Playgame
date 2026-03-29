@@ -1235,9 +1235,10 @@ export default function Home() {
     // FORZA 4 GAME
     if (gameType === 'forza4') {
       const board = forza4Board;
-      const winner = gameState.winner as string;
-      const isGameOver = gameState.phase === 'gameOver';
-      const myPlayerIndex = (gameState.players as any[])?.findIndex((p: any) => p.id === playerId);
+      const winner = gameState?.winner;
+      const isGameOver = gameState?.phase === 'gameOver';
+      const players = gameState?.players || [];
+      const myPlayerIndex = players.findIndex((p: any) => p.id === playerId);
       const myColor = myPlayerIndex === 0 ? 'red' : 'yellow';
       
       return (
@@ -1336,7 +1337,7 @@ export default function Home() {
               
               {/* Players */}
               <div className="flex gap-4 mt-8">
-                {(gameState.players as any[])?.map((p: any, i: number) => (
+                {(gameState?.players || [])?.map((p: any, i: number) => (
                   <motion.div
                     key={p.id}
                     whileHover={{ scale: 1.05 }}
@@ -1370,15 +1371,16 @@ export default function Home() {
 
     // BRISCOLA GAME
     if (gameType === 'briscola') {
-      const trumpSuit = BRISCOLA_SUITS.find(s => s.emoji === gameState.briscolaSuit);
-      const deckCount = (gameState.deck as any[])?.length || 0;
-      const isGameOver = gameState.phase === 'gameOver';
-      const winner = gameState.winner as string;
-      const opponent = (gameState.players as any[])?.find(p => p.id !== playerId);
-      const myPlayer = (gameState.players as any[])?.find(p => p.id === playerId);
+      const trumpSuit = BRISCOLA_SUITS.find(s => s.emoji === gameState?.briscolaSuit);
+      const deckCount = gameState?.deck?.length || 0;
+      const isGameOver = gameState?.phase === 'gameOver';
+      const winner = gameState?.winner;
+      const players = gameState?.players || [];
+      const opponent = players.find(p => p.id !== playerId);
+      const myPlayer = players.find(p => p.id === playerId);
       const myScore = myPlayer?.points || 0;
       const opponentScore = opponent?.points || 0;
-      const tableCards = (gameState.currentTrick as any[]) || [];
+      const tableCards = gameState?.currentTrick || [];
       
       return (
         <main className="min-h-screen bg-gradient-to-br from-gray-900 via-amber-900/20 to-gray-900 flex flex-col">
@@ -1526,11 +1528,11 @@ export default function Home() {
 
     // UNO GAME
     if (gameType === 'uno') {
-      const discardArray = gameState.discardPile as any[];
+      const discardArray = gameState?.discardPile || [];
       const topCard = discardArray && discardArray.length > 0 ? discardArray[discardArray.length - 1] : null;
-      const currentColor = gameState.currentColor as string;
-      const isGameOver = gameState.phase === 'gameOver';
-      const winner = gameState.winner as string;
+      const currentColor = gameState?.currentColor || 'red';
+      const isGameOver = gameState?.phase === 'gameOver';
+      const winner = gameState?.winner;
       
       const canPlayCard = (card: GameCard) => {
         if (!isMyTurn) return false;
@@ -1645,7 +1647,7 @@ export default function Home() {
               <div className="mt-6 bg-black/30 backdrop-blur-xl rounded-2xl p-4 w-full max-w-md border border-white/10">
                 <h3 className="text-white font-semibold mb-3">Giocatori</h3>
                 <div className="space-y-2">
-                  {(gameState.players as any[])?.map((p: any, i: number) => (
+                  {(gameState?.players || [])?.map((p: any, i: number) => (
                     <div 
                       key={i} 
                       className={`flex justify-between items-center p-3 rounded-xl transition-all ${
@@ -1690,14 +1692,14 @@ export default function Home() {
 
     // INDOVINA CHI GAME
     if (gameType === 'indovinachi') {
-      const isMyTurn = gameState.currentTurn === playerId;
-      const phase = gameState.phase as string;
-      const winner = gameState.winner as string | null;
-      const myCharacterId = gameState.myCharacter as number | null;
-      const secretCharacterId = gameState.secretCharacter as number | null;
-      const eliminatedCharacters = (gameState.eliminatedCharacters as number[]) || [];
-      const currentQuestion = gameState.currentQuestion as string || '';
-      const answer = gameState.lastAnswer as boolean | null;
+      const isMyTurn = gameState?.currentTurn === playerId;
+      const phase = gameState?.phase || '';
+      const winner = gameState?.winner || null;
+      const myCharacterId = gameState?.myCharacter || null;
+      const secretCharacterId = gameState?.secretCharacter || null;
+      const eliminatedCharacters = gameState?.eliminatedCharacters || [];
+      const currentQuestion = gameState?.currentQuestion || '';
+      const answer = gameState?.lastAnswer || null;
       const canGuess = isMyTurn && phase === 'guessing';
       const myCharacter = CHARACTERS.find(c => c.id === myCharacterId) || null;
       const secretCharacter = CHARACTERS.find(c => c.id === secretCharacterId) || null;
@@ -1738,13 +1740,14 @@ export default function Home() {
 
     // NOME CITTÀ GAME
     if (gameType === 'nomecitta') {
-      const currentLetter = gameState.currentLetter as string;
-      const roundNumber = gameState.roundNumber as number || 1;
-      const phase = gameState.phase as string;
-      const myPlayer = (gameState.players as any[])?.find(p => p.id === playerId);
+      const currentLetter = gameState?.currentLetter || '';
+      const roundNumber = gameState?.roundNumber || 1;
+      const phase = gameState?.phase || '';
+      const players = gameState?.players || [];
+      const myPlayer = players.find(p => p.id === playerId);
       const myAnswers = myPlayer?.answers || {};
-      const allAnswers = gameState.allAnswers as Record<string, Record<string, string>> || {};
-      const scores = gameState.scores as Record<string, number> || {};
+      const allAnswers = gameState?.allAnswers || {};
+      const scores = gameState?.scores || {};
       const hostPlayer = players.find(p => p.isHost);
       const isPlayerHost = hostPlayer?.id === playerId;
       const categories = ['Nome', 'Città', 'Animale', 'Frutto', 'Lavoro', 'Fiore'];
@@ -1907,11 +1910,11 @@ export default function Home() {
 
     // GIOCO DELL'OCA
     if (gameType === 'giocodelloca') {
-      const ocaPlayers = gameState.players as any[];
-      const lastDice = gameState.lastDiceResult as number | null;
-      const lastAction = gameState.lastAction as { playerId: string; message: string } | null;
-      const winner = gameState.winner as string | null;
-      const isGameOver = gameState.phase === 'gameOver';
+      const ocaPlayers = gameState?.players || [];
+      const lastDice = gameState?.lastDiceResult || null;
+      const lastAction = gameState?.lastAction || null;
+      const winner = gameState?.winner || null;
+      const isGameOver = gameState?.phase === 'gameOver';
 
       return (
         <main className="min-h-screen bg-gradient-to-br from-amber-900 via-orange-800/20 to-amber-900 flex flex-col items-center p-2 sm:p-4">
